@@ -12,7 +12,6 @@ import tkinter
 import tkinter.messagebox
 import py_win_keyboard_layout as pwkl
 from typing import List
-
 from reapy import reascript_api as RPR
 from tkinter import filedialog
 
@@ -37,6 +36,16 @@ def load_path_from_saved_location(name):
     except KeyError:
         path = None
     return path
+
+
+def save_options_to_saved_location(name, path):
+    """Функция для сохранения пути в файл конфигурации"""
+    config = configparser.ConfigParser()
+    config.read('config.ini')
+    config['OPTIONS'] = {}
+    config['OPTIONS'][name] = path
+    with open('config.ini', 'w') as config_file:
+        config.write(config_file)
 
 
 # Функция меняет раскладку на нужную сама, но скрипт нужно перезапустить
@@ -77,7 +86,10 @@ def reaper_nun():
 
 
 def choice_folder():
-    folder = filedialog.askdirectory(title='Выберите рабочую папку с эпизодом')
+    """Функция для выбора рабочей папки с эпизодом"""
+    folder = filedialog.askdirectory(
+        title='Выберите рабочую папку с эпизодом'
+    )
     files = glob.glob(os.path.join(folder, '*.flac*'))
     mkv_video = glob.glob(os.path.join(folder, '*.mkv'))
     mp4_video = glob.glob(os.path.join(folder, '*.mp4'))
@@ -138,8 +150,20 @@ def video_select(
         RPR.InsertMedia(mp4_video[0], (1 << 9) | 0)
 
 
-def audio_select(folder: str):
+# Полезно, если используется сплит,
+# в остальных случаях лучше закомментировать 2 раза ниже в коде
+def volume_up(track):
+    """Функция для увеличения исходной громкости дорог"""
+    item = RPR.GetTrackMediaItem(track, 0)
+    RPR.SetMediaItemInfo_Value(item, 'D_VOL', 2.82)
+
+
+def audio_select(folder: str, project):
     """Функция для добавления аудио"""
+    track = project.tracks[1]
+    track.select()
+    print(track.name)
+    RPR.SnapToGrid(project, 20)
     fx_chains_dict = get_fx_chains()
     fixed_files = glob.glob(os.path.join(folder, '*.flac'))
     wav_files = glob.glob(os.path.join(folder, '*.wav'))
@@ -152,6 +176,7 @@ def audio_select(folder: str):
                 RPR.GetSetMediaTrackInfo_String(
                     track, 'P_NAME', name.upper(), True
                 )
+                volume_up(track)  # Первый раз
     for file in wav_files:
         RPR.InsertMedia(file, 1)
         track = RPR.GetLastTouchedTrack()
@@ -161,20 +186,34 @@ def audio_select(folder: str):
                 RPR.GetSetMediaTrackInfo_String(
                     track, 'P_NAME', name.upper(), True
                 )
+                volume_up(track)  # Второй раз
     if not fixed_files and not wav_files:
         reapy.print('В рабочей папке нет аудио, подходящего формата')
 
 
-def split():
-    item = RPR.GetSelectedMediaItem(0, 0)
-    RPR.SetMediaItemSelected(item, False)
+# Можно дать больше времени на работу сплита, если увеличить значение X_FILE
+def get_info_values():
+    """Функция для получения значений видео и сна"""
+    X_FILE = 5
+    video_item = RPR.GetSelectedMediaItem(0, 0)
+    all_tracks = RPR.GetNumTracks()
+    dub_tracks = all_tracks - 2
+    split_sleep = dub_tracks * X_FILE
+    return video_item, split_sleep
+
+
+# Использует послендий пресет сплита
+def split(video_item, split_sleep):
+    """Функция для разделения дорог на айтемы"""
+    RPR.SetMediaItemSelected(video_item, False)
     RPR.Main_OnCommand(40760, 0)
-    time.sleep(10)
+    time.sleep(split_sleep)
     pyautogui.press('enter')
     time.sleep(1)
 
 
 def normalize():
+    """Функция для нормализации айтемов по громкости"""
     RPR.SelectAllMediaItems(0, True)
     normalize_loudness = RPR.NamedCommandLookup(
         '_BR_NORMALIZE_LOUDNESS_ITEMS23'
@@ -195,11 +234,13 @@ def import_subs(subs: List[str]):
     pyautogui.press('enter')
 
 
+# В качестве имени сессии использует имя видео
 def project_save(
         mkv_video: List[str],
         mp4_video: List[str],
         folder: str
         ):
+    """Функция для сохранения проекта"""
     pyautogui.hotkey('ctrl', 'alt', 's')
     if mkv_video:
         project_name = mkv_video[0].split('\\')[-1].replace('mkv', 'rpp')
@@ -212,7 +253,9 @@ def project_save(
     pyautogui.press('enter')
 
 
+# Используется последний пресет рендера
 def render(folder: str):
+    """Функция для рендеринга файла"""
     RPR.Main_OnCommand(40015, 0)
     time.sleep(1)
     for i in range(35):
@@ -220,7 +263,6 @@ def render(folder: str):
     render_path = folder.replace('/', '\\') + '\\'
     pyautogui.typewrite(render_path)
     pyautogui.press('enter')
-    time.sleep(180)
 
 
 # Чтобы Reaper API подгрузился он должен быть включен при запуске скрипта
@@ -231,18 +273,16 @@ def main():
     folder, files, mkv_video, mp4_video, subs = choice_folder()
     reaper_nun()
     flac_rename(files)
-    audio_select(folder)
+    project = reapy.Project()
+    audio_select(folder, project)
     video_select(mkv_video, mp4_video)
-    split()
+    video_item, split_sleep = get_info_values()
+    split(video_item, split_sleep)
     import_subs(subs)
     project_save(mkv_video, mp4_video, folder)
     normalize()
-    project = reapy.Project()
     project.save(False)
-    render(folder)
-    pyautogui.hotkey('ctrl', 'q')
-    time.sleep(1)
-    pyautogui.press('enter')
+    render(folder)  # Эту функцию можно закомментировать или удалить
 
 
 if __name__ == '__main__':
