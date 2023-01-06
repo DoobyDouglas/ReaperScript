@@ -162,8 +162,6 @@ def audio_select(folder: str, project):
     """Функция для добавления аудио"""
     track = project.tracks[1]
     track.select()
-    print(track.name)
-    RPR.SnapToGrid(project, 20)
     fx_chains_dict = get_fx_chains()
     fixed_files = glob.glob(os.path.join(folder, '*.flac'))
     wav_files = glob.glob(os.path.join(folder, '*.wav'))
@@ -227,11 +225,15 @@ def normalize():
 # и все пути к рабочей папке должны быть на английском
 def import_subs(subs: List[str]):
     """Функция для добавления субтитров"""
-    pyautogui.press('i')
-    time.sleep(1)
-    fix_path = subs[0].replace('/', '\\')
-    pyautogui.typewrite(fix_path)
-    pyautogui.press('enter')
+    try:
+        if subs[0]:
+            pyautogui.press('i')
+            time.sleep(1)
+            fix_path = subs[0].replace('/', '\\')
+            pyautogui.typewrite(fix_path)
+            pyautogui.press('enter')
+    except IndexError:
+        pass
 
 
 # В качестве имени сессии использует имя видео
