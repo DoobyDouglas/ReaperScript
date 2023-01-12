@@ -1,4 +1,6 @@
 altgraph==0.17.3
+asstosrt==0.1.6
+chardet==3.0.4
 ctypes-callable==1.0.4
 future==0.18.2
 importlib-metadata==6.0.0
@@ -11,13 +13,17 @@ PyAutoGUI==0.9.53
 PyGetWindow==0.0.9
 pyinstaller==5.7.0
 pyinstaller-hooks-contrib==2022.14
+pymediainfo==2.1.9
 PyMsgBox==1.0.9
 pyperclip==1.8.2
+PyQt5==5.9
 PyRect==0.2.0
 PyScreeze==0.1.28
+python-mpv==0.3.2
 python-reapy==0.10.0
 pytweening==1.0.4
 pywin32==305
 pywin32-ctypes==0.2.0
+sip==4.19.8
 typing-extensions==4.4.0
 zipp==3.11.0
