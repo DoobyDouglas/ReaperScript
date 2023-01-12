@@ -38,16 +38,6 @@ def load_path_from_saved_location(name):
     return path
 
 
-def save_options_to_saved_location(name, path):
-    """Функция для сохранения пути в файл конфигурации"""
-    config = configparser.ConfigParser()
-    config.read('config.ini')
-    config['OPTIONS'] = {}
-    config['OPTIONS'][name] = path
-    with open('config.ini', 'w') as config_file:
-        config.write(config_file)
-
-
 # Функция меняет раскладку на нужную сама, но скрипт нужно перезапустить
 def keyboard_check():
     """Функция для проверки раскладки клавиатуры"""
@@ -62,8 +52,8 @@ def keyboard_check():
         raise SystemExit
 
 
-def reaper_nun():
-    """Функция для запуска REAPER"""
+def reaper_check():
+    """Функция для создания путей к компонентам REAPER"""
     reaper_path = load_path_from_saved_location('reaper_path')
     if not reaper_path:
         reaper_path = filedialog.askopenfilename(
@@ -82,7 +72,79 @@ def reaper_nun():
             title='Выберите папку с цепями эффектов'
         )
     save_path_to_saved_location('fx_chains_folder', fx_chains_folder)
+
+
+def reaper_nun():
+    """Функция для запуска REAPER"""
+    reaper_path = load_path_from_saved_location('reaper_path')
+    project_path = load_path_from_saved_location('project_path')
     subprocess.run([reaper_path, project_path])
+
+
+def subs_rename(folder: str, subs: List[str]):
+    filenamae = os.path.splitext(subs[0])[0].split('\\')[-2]
+    s_number = os.path.basename(folder)
+    os.rename(subs[0], filenamae + '/' + s_number + '.srt')
+    subs = glob.glob(os.path.join(folder, '*.srt'))
+    return subs
+
+
+# Для корректной работы ffmpeg из кода,
+# путь до рабочей папки не должен содержать пробелов,
+# их можно заменить на "_"
+def subs_extract(folder: str, mkv_video: List[str], param: str):
+    if param == 'ass':
+        command = f'ffmpeg -i {mkv_video[0]} {folder}/subs.ass'
+        subprocess.call(command, shell=True)
+    if param == 'srt':
+        command = f'ffmpeg -i {mkv_video[0]} {folder}/subs.srt'
+        subprocess.call(command, shell=True)
+
+
+def sub_convert(folder: str):
+    disk = folder.split(':')[0].lower()
+    folder_path = folder.split(':')[1]
+    command = f'{disk}: && cd {folder_path} && asstosrt'
+    subprocess.call(command, shell=True)
+
+
+def video_rename(folder: str, video: List[str]):
+    title = folder.split('/')[-2]
+    video_type = video[0].split('.')[-1]
+    filename = os.path.splitext(video[0])[0].split('\\')[-2]
+    s_number = os.path.basename(folder)
+    if video_type == 'mkv':
+        os.rename(video[0], filename + '/' + title + s_number + '.mkv')
+        video = glob.glob(os.path.join(folder, '*.mkv'))
+    if video_type == 'mp4':
+        os.rename(video[0], filename + '/' + title + s_number + '.mp4')
+        video = glob.glob(os.path.join(folder, '*.mp4'))
+    return video
+
+
+def file_works(folder: str):
+    files = glob.glob(os.path.join(folder, '*.flac*'))
+    mkv_video = glob.glob(os.path.join(folder, '*.mkv'))
+    if mkv_video:
+        mkv_video = video_rename(folder, mkv_video)
+        subs_extract(folder, mkv_video, 'ass')
+    mp4_video = glob.glob(os.path.join(folder, '*.mp4'))
+    if mp4_video:
+        mp4_video = video_rename(folder, mp4_video)
+    subs = glob.glob(os.path.join(folder, '*.ass'))
+    if subs:
+        sub_convert(folder)
+    subs = glob.glob(os.path.join(folder, '*.srt'))
+    if subs:
+        subs = subs_rename(folder, subs)
+    else:
+        try:
+            subs_extract(folder, mkv_video, 'srt')
+            subs = glob.glob(os.path.join(folder, '*.srt'))
+            subs = subs_rename(folder, subs)
+        except IndexError:
+            pass
+    return files, mkv_video, mp4_video, subs
 
 
 def choice_folder():
@@ -90,11 +152,7 @@ def choice_folder():
     folder = filedialog.askdirectory(
         title='Выберите рабочую папку с эпизодом'
     )
-    files = glob.glob(os.path.join(folder, '*.flac*'))
-    mkv_video = glob.glob(os.path.join(folder, '*.mkv'))
-    mp4_video = glob.glob(os.path.join(folder, '*.mp4'))
-    subs = glob.glob(os.path.join(folder, '*.srt'))
-    return folder, files, mkv_video, mp4_video, subs
+    return folder
 
 
 def flac_rename(files: List[str]):
@@ -132,6 +190,12 @@ def video_select(
         mp4_video: List[str],
         ):
     """Функция для добавления видео"""
+    if mkv_video and mp4_video:
+        tkinter.messagebox.showinfo(
+            'Разные видео',
+            'В рабочей папке есть несколько видео разного формата'
+        )
+        raise SystemExit
     if mkv_video:
         if len(mkv_video) > 1:
             tkinter.messagebox.showinfo(
@@ -158,10 +222,8 @@ def volume_up(track):
     RPR.SetMediaItemInfo_Value(item, 'D_VOL', 2.82)
 
 
-def audio_select(folder: str, project):
+def audio_select(folder: str):
     """Функция для добавления аудио"""
-    track = project.tracks[1]
-    track.select()
     fx_chains_dict = get_fx_chains()
     fixed_files = glob.glob(os.path.join(folder, '*.flac'))
     wav_files = glob.glob(os.path.join(folder, '*.wav'))
@@ -174,7 +236,7 @@ def audio_select(folder: str, project):
                 RPR.GetSetMediaTrackInfo_String(
                     track, 'P_NAME', name.upper(), True
                 )
-                volume_up(track)  # Первый раз
+        volume_up(track)  # Первый раз
     for file in wav_files:
         RPR.InsertMedia(file, 1)
         track = RPR.GetLastTouchedTrack()
@@ -184,9 +246,10 @@ def audio_select(folder: str, project):
                 RPR.GetSetMediaTrackInfo_String(
                     track, 'P_NAME', name.upper(), True
                 )
-                volume_up(track)  # Второй раз
+        volume_up(track)  # Второй раз
     if not fixed_files and not wav_files:
         reapy.print('В рабочей папке нет аудио, подходящего формата')
+        raise SystemExit
 
 
 # Можно дать больше времени на работу сплита, если увеличить значение X_FILE
@@ -225,31 +288,33 @@ def normalize():
 # и все пути к рабочей папке должны быть на английском
 def import_subs(subs: List[str]):
     """Функция для добавления субтитров"""
-    try:
-        if subs[0]:
-            pyautogui.press('i')
-            time.sleep(1)
-            fix_path = subs[0].replace('/', '\\')
-            pyautogui.typewrite(fix_path)
-            pyautogui.press('enter')
-    except IndexError:
-        pass
+    if len(subs) > 1:
+        tkinter.messagebox.showinfo(
+                'Много Субтитров',
+                'В рабочей папке есть несколько субтитров. Выберите вручную'
+            )
+        manual_import = RPR.NamedCommandLookup('_S&M_IMPORT_SUBTITLE')
+        RPR.Main_OnCommand(manual_import, 0)
+    else:
+        try:
+            if subs[0]:
+                pyautogui.press('i')
+                time.sleep(1)
+                fix_path = subs[0].replace('/', '\\')
+                pyautogui.typewrite(fix_path)
+                pyautogui.press('enter')
+        except IndexError:
+            pass
 
 
 # В качестве имени сессии использует имя видео
-def project_save(
-        mkv_video: List[str],
-        mp4_video: List[str],
-        folder: str
-        ):
+def project_save(folder: str):
     """Функция для сохранения проекта"""
+    s_number = os.path.basename(folder)
+    title = folder.split('/')[-2]
+    project_name = f'{title} {s_number}'
+    new_porject_path = folder.replace('/', '\\') + '\\' + f'{project_name}'
     pyautogui.hotkey('ctrl', 'alt', 's')
-    if mkv_video:
-        project_name = mkv_video[0].split('\\')[-1].replace('mkv', 'rpp')
-        new_porject_path = folder.replace('/', '\\') + '\\' + f'{project_name}'
-    elif mp4_video:
-        project_name = mp4_video[0].split('\\')[-1].replace('mp4', 'rpp')
-        new_porject_path = folder.replace('/', '\\') + '\\' + f'{project_name}'
     time.sleep(1)
     pyautogui.typewrite(new_porject_path)
     pyautogui.press('enter')
@@ -272,16 +337,18 @@ def main():
     """Основная функция создания проекта"""
     tkinter.Tk().withdraw()
     keyboard_check()
-    folder, files, mkv_video, mp4_video, subs = choice_folder()
+    reaper_check()
+    folder = choice_folder()
+    files, mkv_video, mp4_video, subs = file_works(folder)
     reaper_nun()
     flac_rename(files)
     project = reapy.Project()
-    audio_select(folder, project)
+    audio_select(folder)
     video_select(mkv_video, mp4_video)
     video_item, split_sleep = get_info_values()
     split(video_item, split_sleep)
     import_subs(subs)
-    project_save(mkv_video, mp4_video, folder)
+    project_save(folder)
     normalize()
     project.save(False)
     render(folder)  # Эту функцию можно закомментировать или удалить
