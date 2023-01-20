@@ -81,11 +81,15 @@ def reaper_nun():
     subprocess.run([reaper_path, project_path])
 
 
+def get_path_to_files(folder: str, extension: str):
+    return glob.glob(os.path.join(folder, extension))
+
+
 def subs_rename(folder: str, subs: List[str]):
     filenamae = os.path.splitext(subs[0])[0].split('\\')[-2]
     s_number = os.path.basename(folder)
     os.rename(subs[0], filenamae + '/' + s_number + '.srt')
-    subs = glob.glob(os.path.join(folder, '*.srt'))
+    subs = get_path_to_files(folder, '*.srt')
     return subs
 
 
@@ -101,10 +105,18 @@ def subs_extract(folder: str, mkv_video: List[str], param: str):
         subprocess.call(command, shell=True)
 
 
-def sub_convert(folder: str):
+def ass_sub_convert(folder: str):
     disk = folder.split(':')[0].lower()
     folder_path = folder.split(':')[1]
     command = f'{disk}: && cd {folder_path} && asstosrt'
+    subprocess.call(command, shell=True)
+
+
+def vtt_sub_convert(folder: str, subs: List[str]):
+    filename = os.path.splitext(subs[0])[0].split('\\')[-2]
+    os.rename(subs[0], filename + '/' + 'subs.vtt')
+    subs = get_path_to_files(folder, '*.vtt')
+    command = f'ffmpeg -i {subs[0]} {folder}/subs.srt'
     subprocess.call(command, shell=True)
 
 
@@ -115,49 +127,16 @@ def video_rename(folder: str, video: List[str]):
     s_number = os.path.basename(folder)
     if video_type == 'mkv':
         os.rename(video[0], filename + '/' + title + s_number + '.mkv')
-        video = glob.glob(os.path.join(folder, '*.mkv'))
+        video = get_path_to_files(folder, '*.mkv')
     if video_type == 'mp4':
         os.rename(video[0], filename + '/' + title + s_number + '.mp4')
-        video = glob.glob(os.path.join(folder, '*.mp4'))
+        video = get_path_to_files(folder, '*.mp4')
     return video
 
 
-def file_works(folder: str):
-    files = glob.glob(os.path.join(folder, '*.flac*'))
-    mkv_video = glob.glob(os.path.join(folder, '*.mkv'))
-    if mkv_video:
-        mkv_video = video_rename(folder, mkv_video)
-        subs_extract(folder, mkv_video, 'ass')
-    mp4_video = glob.glob(os.path.join(folder, '*.mp4'))
-    if mp4_video:
-        mp4_video = video_rename(folder, mp4_video)
-    subs = glob.glob(os.path.join(folder, '*.ass'))
-    if subs:
-        sub_convert(folder)
-    subs = glob.glob(os.path.join(folder, '*.srt'))
-    if subs:
-        subs = subs_rename(folder, subs)
-    else:
-        try:
-            subs_extract(folder, mkv_video, 'srt')
-            subs = glob.glob(os.path.join(folder, '*.srt'))
-            subs = subs_rename(folder, subs)
-        except IndexError:
-            pass
-    return files, mkv_video, mp4_video, subs
-
-
-def choice_folder():
-    """Функция для выбора рабочей папки с эпизодом"""
-    folder = filedialog.askdirectory(
-        title='Выберите рабочую папку с эпизодом'
-    )
-    return folder
-
-
-def flac_rename(files: List[str]):
+def flac_rename(folder: str, flac_audio: List[str]):
     """Функция для изменения нечитаемых расширений"""
-    for file in files:
+    for file in flac_audio:
         if '.reapeaks' not in file.lower():
             try:
                 filename = os.path.splitext(file)[0]
@@ -170,6 +149,51 @@ def flac_rename(files: List[str]):
                 raise SystemExit
         else:
             pass
+    fixed_flac = get_path_to_files(folder, '*.flac')
+    return fixed_flac
+
+
+def file_works(folder: str):
+    flac_audio = get_path_to_files(folder, '*.flac*')
+    if flac_audio:
+        flac_audio = flac_rename(folder, flac_audio)
+    wav_audio = get_path_to_files(folder, '*.wav')
+    mkv_video = get_path_to_files(folder, '*.mkv')
+    if mkv_video:
+        mkv_video = video_rename(folder, mkv_video)
+        subs_extract(folder, mkv_video, 'ass')
+    mp4_video = get_path_to_files(folder, '*.mp4')
+    if mp4_video:
+        mp4_video = video_rename(folder, mp4_video)
+    subs = get_path_to_files(folder, '*.srt')
+    if subs:
+        subs = subs_rename(folder, subs)
+    else:
+        vtt_subs = get_path_to_files(folder, '*.vtt')
+        if vtt_subs:
+            vtt_sub_convert(folder, vtt_subs)
+        ass_subs = get_path_to_files(folder, '*.ass')
+        if ass_subs:
+            ass_sub_convert(folder)
+        srt_subs = get_path_to_files(folder, '*.srt')
+        if srt_subs:
+            subs = subs_rename(folder, srt_subs)
+        else:
+            try:
+                subs_extract(folder, mkv_video, 'srt')
+                subs = get_path_to_files(folder, '*.srt')
+                subs = subs_rename(folder, subs)
+            except IndexError:
+                pass
+    return flac_audio, wav_audio, mkv_video, mp4_video, subs
+
+
+def choice_folder():
+    """Функция для выбора рабочей папки с эпизодом"""
+    folder = filedialog.askdirectory(
+        title='Выберите рабочую папку с эпизодом'
+    )
+    return folder
 
 
 # Если имена состоят из нескольких слов, названия цепей нужно писать через "_"
@@ -177,7 +201,7 @@ def get_fx_chains():
     """Функция создания словаря из дабберов и названий их цепей эффектов"""
     fx_dict = {}
     fx_chains_folder = load_path_from_saved_location('fx_chains_folder')
-    fx_chains = glob.glob(os.path.join(fx_chains_folder, '*.RfxChain'))
+    fx_chains = get_path_to_files(fx_chains_folder, '*.RfxChain')
     for chain in fx_chains:
         fx_chain_name = chain.split('\\')[-1]
         dubber_name = fx_chain_name.split('.')[-2].lower()
@@ -219,15 +243,16 @@ def video_select(
 def volume_up(track):
     """Функция для увеличения исходной громкости дорог"""
     item = RPR.GetTrackMediaItem(track, 0)
-    RPR.SetMediaItemInfo_Value(item, 'D_VOL', 2.82)
+    RPR.SetMediaItemInfo_Value(item, 'D_VOL', 1.5)
 
 
-def audio_select(folder: str):
+def audio_select(
+        flac_audio: List[str],
+        wav_audio: List[str]
+        ):
     """Функция для добавления аудио"""
     fx_chains_dict = get_fx_chains()
-    fixed_files = glob.glob(os.path.join(folder, '*.flac'))
-    wav_files = glob.glob(os.path.join(folder, '*.wav'))
-    for file in fixed_files:
+    for file in flac_audio:
         RPR.InsertMedia(file, 1)
         track = RPR.GetLastTouchedTrack()
         for name in fx_chains_dict:
@@ -237,7 +262,7 @@ def audio_select(folder: str):
                     track, 'P_NAME', name.upper(), True
                 )
         volume_up(track)  # Первый раз
-    for file in wav_files:
+    for file in wav_audio:
         RPR.InsertMedia(file, 1)
         track = RPR.GetLastTouchedTrack()
         for name in fx_chains_dict:
@@ -247,7 +272,7 @@ def audio_select(folder: str):
                     track, 'P_NAME', name.upper(), True
                 )
         volume_up(track)  # Второй раз
-    if not fixed_files and not wav_files:
+    if not flac_audio and not wav_audio:
         reapy.print('В рабочей папке нет аудио, подходящего формата')
         raise SystemExit
 
@@ -325,7 +350,9 @@ def render(folder: str):
     """Функция для рендеринга файла"""
     RPR.Main_OnCommand(40015, 0)
     time.sleep(1)
-    for i in range(35):
+    pyautogui.typewrite('audio')
+    time.sleep(1)
+    for i in range(34):
         pyautogui.press('tab')
     render_path = folder.replace('/', '\\') + '\\'
     pyautogui.typewrite(render_path)
@@ -339,16 +366,16 @@ def main():
     keyboard_check()
     reaper_check()
     folder = choice_folder()
-    files, mkv_video, mp4_video, subs = file_works(folder)
+    flac_audio, wav_audio, mkv_video, mp4_video, subs = file_works(folder)
     reaper_nun()
-    flac_rename(files)
     project = reapy.Project()
-    audio_select(folder)
+    project_save(folder)
+    audio_select(flac_audio, wav_audio)
     video_select(mkv_video, mp4_video)
+    import_subs(subs)
+    project.save(False)
     video_item, split_sleep = get_info_values()
     split(video_item, split_sleep)
-    import_subs(subs)
-    project_save(folder)
     normalize()
     project.save(False)
     render(folder)  # Эту функцию можно закомментировать или удалить
