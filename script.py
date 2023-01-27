@@ -74,7 +74,7 @@ def reaper_check():
     save_path_to_saved_location('fx_chains_folder', fx_chains_folder)
 
 
-def reaper_nun():
+def reaper_run():
     """Функция для запуска REAPER"""
     reaper_path = load_path_from_saved_location('reaper_path')
     project_path = load_path_from_saved_location('project_path')
@@ -82,10 +82,12 @@ def reaper_nun():
 
 
 def get_path_to_files(folder: str, extension: str):
+    """Функция для получения пути к файлу"""
     return glob.glob(os.path.join(folder, extension))
 
 
 def subs_rename(folder: str, subs: List[str]):
+    """Функция для изменения имени субтитров"""
     filenamae = os.path.splitext(subs[0])[0].split('\\')[-2]
     s_number = os.path.basename(folder)
     os.rename(subs[0], filenamae + '/' + s_number + '.srt')
@@ -97,6 +99,7 @@ def subs_rename(folder: str, subs: List[str]):
 # путь до рабочей папки не должен содержать пробелов,
 # их можно заменить на "_"
 def subs_extract(folder: str, mkv_video: List[str], param: str):
+    """Функция для извлечения субтитров из видео"""
     if param == 'ass':
         command = f'ffmpeg -i {mkv_video[0]} {folder}/subs.ass'
         subprocess.call(command, shell=True)
@@ -106,6 +109,7 @@ def subs_extract(folder: str, mkv_video: List[str], param: str):
 
 
 def ass_sub_convert(folder: str):
+    """Функция для конвертирования ass субтитров"""
     disk = folder.split(':')[0].lower()
     folder_path = folder.split(':')[1]
     command = f'{disk}: && cd {folder_path} && asstosrt'
@@ -113,6 +117,7 @@ def ass_sub_convert(folder: str):
 
 
 def vtt_sub_convert(folder: str, subs: List[str]):
+    """Функция для конвертирования vtt субтитров"""
     filename = os.path.splitext(subs[0])[0].split('\\')[-2]
     os.rename(subs[0], filename + '/' + 'subs.vtt')
     subs = get_path_to_files(folder, '*.vtt')
@@ -121,15 +126,16 @@ def vtt_sub_convert(folder: str, subs: List[str]):
 
 
 def video_rename(folder: str, video: List[str]):
+    """Функция для изменения имени видео"""
     title = folder.split('/')[-2]
     video_type = video[0].split('.')[-1]
     filename = os.path.splitext(video[0])[0].split('\\')[-2]
     s_number = os.path.basename(folder)
     if video_type == 'mkv':
-        os.rename(video[0], filename + '/' + title + s_number + '.mkv')
+        os.rename(video[0], filename + '/' + title + f'_{s_number}' + '.mkv')
         video = get_path_to_files(folder, '*.mkv')
     if video_type == 'mp4':
-        os.rename(video[0], filename + '/' + title + s_number + '.mp4')
+        os.rename(video[0], filename + '/' + title + f'_{s_number}' + '.mp4')
         video = get_path_to_files(folder, '*.mp4')
     return video
 
@@ -154,6 +160,7 @@ def flac_rename(folder: str, flac_audio: List[str]):
 
 
 def file_works(folder: str):
+    """Функция для подготовки файлов к работе"""
     flac_audio = get_path_to_files(folder, '*.flac*')
     if flac_audio:
         flac_audio = flac_rename(folder, flac_audio)
@@ -277,15 +284,17 @@ def audio_select(
         raise SystemExit
 
 
-# Можно дать больше времени на работу сплита, если увеличить значение X_FILE
+# Можно дать больше времени на работу сплита, если уменьшить значение X_FILE
 def get_info_values():
     """Функция для получения значений видео и сна"""
     X_FILE = 5
     video_item = RPR.GetSelectedMediaItem(0, 0)
+    lenght = RPR.GetMediaItemInfo_Value(video_item, "D_LENGTH") / 60
+    sleep = lenght / X_FILE
     all_tracks = RPR.GetNumTracks()
     dub_tracks = all_tracks - 2
-    split_sleep = dub_tracks * X_FILE
-    return video_item, split_sleep
+    split_sleep = dub_tracks * sleep
+    return video_item, split_sleep, lenght
 
 
 # Использует послендий пресет сплита
@@ -359,26 +368,66 @@ def render(folder: str):
     pyautogui.press('enter')
 
 
+# Можно дать больше времени на рендер, если уменьшить значение X_FILE
+def reaper_close(lenght: float):
+    """Функция для закрытия REAPER"""
+    X_FILE = 0.13
+    sleep = lenght / X_FILE
+    time.sleep(sleep)
+    pyautogui.hotkey('ctrl', 'q')
+    time.sleep(1)
+    pyautogui.press('enter')
+
+
+def audio_convert(folder: str):
+    command = f'ffmpeg -i {folder}/audio.wav -ab 256k {folder}/audio.aac'
+    subprocess.call(command, shell=True)
+
+
+def make_episode(
+        folder: str,
+        mkv_video: List[str],
+        mp4_video: List[str]
+        ):
+    title = folder.split('/')[-2]
+    s_number = os.path.basename(folder)
+    if mkv_video:
+        command = (
+            f'ffmpeg -i {mkv_video[0]} -i {folder}/audio.aac -c copy '
+            f'-map 0:v:0 -map 1:a:0 {folder}/{title}_{s_number}_DUB.mkv'
+        )
+        subprocess.call(command, shell=True)
+    if mp4_video:
+        command = (
+            f'ffmpeg -i {mp4_video[0]} -i {folder}/audio.aac -c copy '
+            f'-map 0:v:0 -map 1:a:0 {folder}/{title}_{s_number}_DUB.mp4'
+        )
+        subprocess.call(command, shell=True)
+
+
 # Чтобы Reaper API подгрузился он должен быть включен при запуске скрипта
 def main():
-    """Основная функция создания проекта"""
+    """Основная функция"""
     tkinter.Tk().withdraw()
     keyboard_check()
     reaper_check()
     folder = choice_folder()
     flac_audio, wav_audio, mkv_video, mp4_video, subs = file_works(folder)
-    reaper_nun()
+    reaper_run()
     project = reapy.Project()
     project_save(folder)
     audio_select(flac_audio, wav_audio)
     video_select(mkv_video, mp4_video)
     import_subs(subs)
     project.save(False)
-    video_item, split_sleep = get_info_values()
+    video_item, split_sleep, lenght = get_info_values()
     split(video_item, split_sleep)
     normalize()
     project.save(False)
-    render(folder)  # Эту функцию можно закомментировать или удалить
+    render(folder)  # Эту функцию и следующие можно закомментировать
+    reaper_close(lenght)
+    audio_convert(folder)
+    make_episode(folder, mkv_video, mp4_video)
 
 
 if __name__ == '__main__':
