@@ -424,10 +424,10 @@ def main():
     split(video_item, split_sleep)
     normalize()
     project.save(False)
-    render(folder)  # Эту функцию и следующие можно закомментировать
-    reaper_close(lenght)
-    audio_convert(folder)
-    make_episode(folder, mkv_video, mp4_video)
+    # render(folder)  # Эту функцию и следующие можно закомментировать
+    # reaper_close(lenght)
+    # audio_convert(folder)
+    # make_episode(folder, mkv_video, mp4_video)
 
 
 if __name__ == '__main__':
