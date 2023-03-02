@@ -1,4 +1,5 @@
 import tkinter
+from tkinter import filedialog
 import configparser
 import os
 
@@ -12,21 +13,41 @@ def get_config():
     return config
 
 
+def save_path_to_config(name, path):
+    """Функция для сохранения пути в файл конфигурации"""
+    config = get_config()
+    if 'PATHS' not in config:
+        config['PATHS'] = {}
+    config['PATHS'][name] = path
+    with open('config.ini', 'w') as config_file:
+        config.write(config_file)
+
+
+def load_path_from_config(name):
+    """Функция для загрузки пути из файла конфигурации"""
+    config = get_config()
+    try:
+        path = config['PATHS'][name]
+    except KeyError:
+        path = None
+    return path
+
+
 def save_options(
         checkboxes: dict,
-        master: tkinter.Tk,
+        window: tkinter.Tk,
         config: configparser.ConfigParser
         ):
     save_button = tkinter.Button(
-        master,
+        window,
         text='Сохранить',
-        command=master.destroy
+        command=window.destroy
     )
     save_button.grid(
         row=len(checkboxes),
         column=0
     )
-    master.mainloop()
+    window.mainloop()
     for option, var in checkboxes.items():
         config['OPTIONS'][option] = str(var.get())
     with open('config.ini', 'w') as config_file:
@@ -35,7 +56,7 @@ def save_options(
 
 def create_widgets(
         OPTIONS: list,
-        master: tkinter.Tk,
+        window: tkinter.Tk,
         config: configparser.ConfigParser
         ):
     checkboxes = {}
@@ -48,7 +69,7 @@ def create_widgets(
         else:
             var.set(False)
         checkbox = tkinter.Checkbutton(
-            master,
+            window,
             text=option,
             variable=var
         )
@@ -62,9 +83,9 @@ def create_widgets(
 
 
 def checkbox_window():
-    master = tkinter.Tk()
-    master.geometry('450x210')
-    master.title('Выберите нужные опции')
+    window = tkinter.Tk()
+    window.geometry('450x210')
+    window.title('Выберите нужные опции')
     OPTIONS = [
         'dubbers_volume_up',
         'item_subs',
@@ -75,8 +96,41 @@ def checkbox_window():
         'make_video',
     ]
     config = get_config()
-    checkboxes = create_widgets(OPTIONS, master, config)
-    save_options(checkboxes, master, config)
+    checkboxes = create_widgets(OPTIONS, window, config)
+    save_options(checkboxes, window, config)
+
+
+def reaper_check():
+    """Функция для создания путей к компонентам REAPER"""
+    reaper_path = load_path_from_config('reaper_path')
+    if not reaper_path:
+        reaper_path = filedialog.askopenfilename(
+            title='Выберите файл reaper.exe'
+        )
+        save_path_to_config('reaper_path', reaper_path)
+    project_path = load_path_from_config('project_path')
+    if not project_path:
+        project_path = filedialog.askopenfilename(
+            title='Выберите файл шаблона проекта REAPER'
+        )
+        save_path_to_config('project_path', project_path)
+    fx_chains_folder = load_path_from_config('fx_chains_folder')
+    if not fx_chains_folder:
+        fx_chains_folder = filedialog.askdirectory(
+            title='Выберите папку с цепями эффектов'
+        )
+    save_path_to_config('fx_chains_folder', fx_chains_folder)
+
+
+def choice_folder():
+    """Функция для выбора рабочей папки с эпизодом"""
+    folder = filedialog.askdirectory(
+        title='Выберите рабочую папку с эпизодом'
+    )
+    return folder
 
 
 checkbox_window()
+tkinter.Tk().withdraw()
+reaper_check()
+choice_folder()

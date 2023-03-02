@@ -19,19 +19,10 @@ from tkinter import filedialog
 def get_config():
     config = configparser.ConfigParser()
     config.read('config.ini')
-    return config
-
-
-def create_сonfig_options(OPTIONS):
-    config = get_config()
-    if 'OPTIONS' not in config:
-        config.add_section('OPTIONS')
-        for i in OPTIONS:
-            config.set('OPTIONS', i, "False")
-            config.set('OPTIONS', i, "False")
-            config.set('OPTIONS', i, "False")
+    if not os.path.exists('config.ini'):
         with open('config.ini', "w") as config_file:
             config.write(config_file)
+    return config
 
 
 def save_options(
@@ -96,7 +87,6 @@ def checkbox_window():
         'render_audio',
         'make_video',
     ]
-    create_сonfig_options(OPTIONS)
     config = get_config()
     checkboxes = create_widgets(OPTIONS, master, config)
     save_options(checkboxes, master, config)
@@ -492,10 +482,10 @@ def make_episode(
 # Чтобы Reaper API подгрузился он должен быть включен при запуске скрипта
 def main():
     """Основная функция"""
-    tkinter.Tk().withdraw()
     keyboard_check()
-    reaper_check()
     checkbox_window()
+    tkinter.Tk().withdraw()
+    reaper_check()
     folder = choice_folder()
     flac_audio, wav_audio, mkv_video, mp4_video, subs = file_works(folder)
     reaper_run()
