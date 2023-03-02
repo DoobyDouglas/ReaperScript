@@ -1,10 +1,14 @@
 import tkinter
 import configparser
+import os
 
 
 def get_config():
     config = configparser.ConfigParser()
     config.read('config.ini')
+    if not os.path.exists('config.ini'):
+        with open('config.ini', "w") as config_file:
+            config.write(config_file)
     return config
 
 
@@ -27,24 +31,6 @@ def save_options(
         config['OPTIONS'][option] = str(var.get())
     with open('config.ini', 'w') as config_file:
         config.write(config_file)
-
-
-def checkbox_window():
-    master = tkinter.Tk()
-    master.geometry("450x210")
-    master.title('Выберите нужные опции')
-    OPTIONS = [
-        'dubbers_volume_up',
-        'item_subs',
-        'region_subs',
-        'split',
-        'normalize',
-        'render_audio',
-        'make_video',
-    ]
-    config = get_config()
-    checkboxes = create_widgets(OPTIONS, master, config)
-    save_options(checkboxes, master, config)
 
 
 def create_widgets(
@@ -73,6 +59,24 @@ def create_widgets(
         )
         checkboxes[option] = var
     return checkboxes
+
+
+def checkbox_window():
+    master = tkinter.Tk()
+    master.geometry('450x210')
+    master.title('Выберите нужные опции')
+    OPTIONS = [
+        'dubbers_volume_up',
+        'item_subs',
+        'region_subs',
+        'split',
+        'normalize',
+        'render_audio',
+        'make_video',
+    ]
+    config = get_config()
+    checkboxes = create_widgets(OPTIONS, master, config)
+    save_options(checkboxes, master, config)
 
 
 checkbox_window()
