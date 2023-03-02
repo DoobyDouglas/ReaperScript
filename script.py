@@ -16,10 +16,15 @@ from reapy import reascript_api as RPR
 from tkinter import filedialog
 
 
-def save_path_to_saved_location(name, path):
-    """Функция для сохранения пути в файл конфигурации"""
+def get_config():
     config = configparser.ConfigParser()
     config.read('config.ini')
+    return config
+
+
+def save_path_to_config(name, path):
+    """Функция для сохранения пути в файл конфигурации"""
+    config = get_config()
     if 'PATHS' not in config:
         config['PATHS'] = {}
     config['PATHS'][name] = path
@@ -27,10 +32,9 @@ def save_path_to_saved_location(name, path):
         config.write(config_file)
 
 
-def load_path_from_saved_location(name):
+def load_path_from_config(name):
     """Функция для загрузки пути из файла конфигурации"""
-    config = configparser.ConfigParser()
-    config.read('config.ini')
+    config = get_config()
     try:
         path = config['PATHS'][name]
     except KeyError:
@@ -54,30 +58,30 @@ def keyboard_check():
 
 def reaper_check():
     """Функция для создания путей к компонентам REAPER"""
-    reaper_path = load_path_from_saved_location('reaper_path')
+    reaper_path = load_path_from_config('reaper_path')
     if not reaper_path:
         reaper_path = filedialog.askopenfilename(
             title='Выберите файл reaper.exe'
         )
-        save_path_to_saved_location('reaper_path', reaper_path)
-    project_path = load_path_from_saved_location('project_path')
+        save_path_to_config('reaper_path', reaper_path)
+    project_path = load_path_from_config('project_path')
     if not project_path:
         project_path = filedialog.askopenfilename(
             title='Выберите файл шаблона проекта REAPER'
         )
-        save_path_to_saved_location('project_path', project_path)
-    fx_chains_folder = load_path_from_saved_location('fx_chains_folder')
+        save_path_to_config('project_path', project_path)
+    fx_chains_folder = load_path_from_config('fx_chains_folder')
     if not fx_chains_folder:
         fx_chains_folder = filedialog.askdirectory(
             title='Выберите папку с цепями эффектов'
         )
-    save_path_to_saved_location('fx_chains_folder', fx_chains_folder)
+    save_path_to_config('fx_chains_folder', fx_chains_folder)
 
 
 def reaper_run():
     """Функция для запуска REAPER"""
-    reaper_path = load_path_from_saved_location('reaper_path')
-    project_path = load_path_from_saved_location('project_path')
+    reaper_path = load_path_from_config('reaper_path')
+    project_path = load_path_from_config('project_path')
     subprocess.run([reaper_path, project_path])
 
 
@@ -207,7 +211,7 @@ def choice_folder():
 def get_fx_chains():
     """Функция создания словаря из дабберов и названий их цепей эффектов"""
     fx_dict = {}
-    fx_chains_folder = load_path_from_saved_location('fx_chains_folder')
+    fx_chains_folder = load_path_from_config('fx_chains_folder')
     fx_chains = get_path_to_files(fx_chains_folder, '*.RfxChain')
     for chain in fx_chains:
         fx_chain_name = chain.split('\\')[-1]

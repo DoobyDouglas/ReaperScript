@@ -2,9 +2,17 @@ import tkinter
 import configparser
 
 
-def save_options(checkboxes: dict, master):
+def get_config():
     config = configparser.ConfigParser()
     config.read('config.ini')
+    return config
+
+
+def save_options(
+        checkboxes: dict,
+        master: tkinter.Tk,
+        config: configparser.ConfigParser
+        ):
     save_button = tkinter.Button(
         master,
         text='Сохранить',
@@ -17,26 +25,34 @@ def save_options(checkboxes: dict, master):
     master.mainloop()
     for option, var in checkboxes.items():
         config['OPTIONS'][option] = str(var.get())
-        print(str(var.get()))
     with open('config.ini', 'w') as config_file:
         config.write(config_file)
 
 
-def checkbox_window(master):
-    master.geometry("400x110")
+def checkbox_window():
+    master = tkinter.Tk()
+    master.geometry("450x210")
     master.title('Выберите нужные опции')
     OPTIONS = [
+        'dubbers_volume_up',
+        'item_subs',
+        'region_subs',
         'split',
         'normalize',
-        'render',
+        'render_audio',
+        'make_video',
     ]
+    config = get_config()
+    checkboxes = create_widgets(OPTIONS, master, config)
+    save_options(checkboxes, master, config)
+
+
+def create_widgets(
+        OPTIONS: list,
+        master: tkinter.Tk,
+        config: configparser.ConfigParser
+        ):
     checkboxes = {}
-    create_widgets(OPTIONS, checkboxes, master)
-
-
-def create_widgets(OPTIONS: list, checkboxes: dict, master):
-    config = configparser.ConfigParser()
-    config.read('config.ini')
     if 'OPTIONS' not in config:
         config['OPTIONS'] = {}
     for i, option in enumerate(OPTIONS):
@@ -56,8 +72,7 @@ def create_widgets(OPTIONS: list, checkboxes: dict, master):
             sticky=tkinter.W
         )
         checkboxes[option] = var
-    save_options(checkboxes, master)
+    return checkboxes
 
 
-master = tkinter.Tk()
-checkbox_window(master)
+checkbox_window()
