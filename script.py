@@ -16,10 +16,85 @@ from reapy import reascript_api as RPR
 from tkinter import filedialog
 
 
-def save_path_to_saved_location(name, path):
-    """Функция для сохранения пути в файл конфигурации"""
+def get_config():
     config = configparser.ConfigParser()
     config.read('config.ini')
+    if not os.path.exists('config.ini'):
+        with open('config.ini', "w") as config_file:
+            config.write(config_file)
+    return config
+
+
+def save_options(
+        checkboxes: dict,
+        master: tkinter.Tk,
+        config: configparser.ConfigParser
+        ):
+    save_button = tkinter.Button(
+        master,
+        text='Сохранить',
+        command=master.destroy
+    )
+    save_button.grid(
+        row=len(checkboxes),
+        column=0
+    )
+    master.mainloop()
+    for option, var in checkboxes.items():
+        config['OPTIONS'][option] = str(var.get())
+    with open('config.ini', 'w') as config_file:
+        config.write(config_file)
+
+
+def create_widgets(
+        OPTIONS: list,
+        master: tkinter.Tk,
+        config: configparser.ConfigParser
+        ):
+    checkboxes = {}
+    if 'OPTIONS' not in config:
+        config['OPTIONS'] = {}
+    for i, option in enumerate(OPTIONS):
+        var = tkinter.BooleanVar()
+        if option in config['OPTIONS']:
+            var.set(config['OPTIONS'].getboolean(option))
+        else:
+            var.set(False)
+        checkbox = tkinter.Checkbutton(
+            master,
+            text=option,
+            variable=var
+        )
+        checkbox.grid(
+            row=i,
+            column=0,
+            sticky=tkinter.W
+        )
+        checkboxes[option] = var
+    return checkboxes
+
+
+def checkbox_window():
+    master = tkinter.Tk()
+    master.geometry('450x210')
+    master.title('Выберите нужные опции')
+    OPTIONS = [
+        'dubbers_volume_up',
+        'item_subs',
+        'region_subs',
+        'split',
+        'normalize',
+        'render_audio',
+        'make_video',
+    ]
+    config = get_config()
+    checkboxes = create_widgets(OPTIONS, master, config)
+    save_options(checkboxes, master, config)
+
+
+def save_path_to_config(name, path):
+    """Функция для сохранения пути в файл конфигурации"""
+    config = get_config()
     if 'PATHS' not in config:
         config['PATHS'] = {}
     config['PATHS'][name] = path
@@ -27,10 +102,9 @@ def save_path_to_saved_location(name, path):
         config.write(config_file)
 
 
-def load_path_from_saved_location(name):
+def load_path_from_config(name):
     """Функция для загрузки пути из файла конфигурации"""
-    config = configparser.ConfigParser()
-    config.read('config.ini')
+    config = get_config()
     try:
         path = config['PATHS'][name]
     except KeyError:
@@ -54,30 +128,30 @@ def keyboard_check():
 
 def reaper_check():
     """Функция для создания путей к компонентам REAPER"""
-    reaper_path = load_path_from_saved_location('reaper_path')
+    reaper_path = load_path_from_config('reaper_path')
     if not reaper_path:
         reaper_path = filedialog.askopenfilename(
             title='Выберите файл reaper.exe'
         )
-        save_path_to_saved_location('reaper_path', reaper_path)
-    project_path = load_path_from_saved_location('project_path')
+        save_path_to_config('reaper_path', reaper_path)
+    project_path = load_path_from_config('project_path')
     if not project_path:
         project_path = filedialog.askopenfilename(
             title='Выберите файл шаблона проекта REAPER'
         )
-        save_path_to_saved_location('project_path', project_path)
-    fx_chains_folder = load_path_from_saved_location('fx_chains_folder')
+        save_path_to_config('project_path', project_path)
+    fx_chains_folder = load_path_from_config('fx_chains_folder')
     if not fx_chains_folder:
         fx_chains_folder = filedialog.askdirectory(
             title='Выберите папку с цепями эффектов'
         )
-    save_path_to_saved_location('fx_chains_folder', fx_chains_folder)
+    save_path_to_config('fx_chains_folder', fx_chains_folder)
 
 
 def reaper_run():
     """Функция для запуска REAPER"""
-    reaper_path = load_path_from_saved_location('reaper_path')
-    project_path = load_path_from_saved_location('project_path')
+    reaper_path = load_path_from_config('reaper_path')
+    project_path = load_path_from_config('project_path')
     subprocess.run([reaper_path, project_path])
 
 
@@ -207,7 +281,7 @@ def choice_folder():
 def get_fx_chains():
     """Функция создания словаря из дабберов и названий их цепей эффектов"""
     fx_dict = {}
-    fx_chains_folder = load_path_from_saved_location('fx_chains_folder')
+    fx_chains_folder = load_path_from_config('fx_chains_folder')
     fx_chains = get_path_to_files(fx_chains_folder, '*.RfxChain')
     for chain in fx_chains:
         fx_chain_name = chain.split('\\')[-1]
@@ -408,8 +482,9 @@ def make_episode(
 # Чтобы Reaper API подгрузился он должен быть включен при запуске скрипта
 def main():
     """Основная функция"""
-    tkinter.Tk().withdraw()
     keyboard_check()
+    checkbox_window()
+    tkinter.Tk().withdraw()
     reaper_check()
     folder = choice_folder()
     flac_audio, wav_audio, mkv_video, mp4_video, subs = file_works(folder)
