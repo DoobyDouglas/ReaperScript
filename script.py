@@ -76,14 +76,15 @@ def create_widgets(
 
 def checkbox_window():
     master = tkinter.Tk()
-    master.geometry('450x210')
+    master.geometry('450x250')
     master.title('Выберите нужные опции')
     OPTIONS = [
         'dubbers_volume_up',
         'item_subs',
         'region_subs',
         'split',
-        'normalize',
+        'normalize_dubbers',
+        'normalize_raw',
         'render_audio',
         'make_video',
     ]
@@ -399,14 +400,19 @@ def split(video_item, split_sleep):
         pass
 
 
-def normalize():
+def normalize(video_item):
     """Функция для нормализации айтемов по громкости"""
-    value = get_value_from_config('normalize')
-    if value == 'True':
-        RPR.SelectAllMediaItems(0, True)
-        normalize_loudness = RPR.NamedCommandLookup(
+    normalize_loudness = RPR.NamedCommandLookup(
             '_BR_NORMALIZE_LOUDNESS_ITEMS23'
         )
+    value = get_value_from_config('normalize_dubbers')
+    if value == 'True':
+        RPR.SetMediaItemSelected(video_item, False)
+        RPR.Main_OnCommand(normalize_loudness, 0)
+    value = get_value_from_config('normalize_raw')
+    if value == 'True':
+        RPR.SelectAllMediaItems(0, False)
+        RPR.SetMediaItemSelected(video_item, True)
         RPR.Main_OnCommand(normalize_loudness, 0)
     else:
         pass
@@ -569,7 +575,7 @@ def main():
     project.save(False)
     video_item, split_sleep, lenght = get_info_values()
     split(video_item, split_sleep)
-    normalize()
+    normalize(video_item)
     project.save(False)
     render(folder)
     reaper_close(lenght)
