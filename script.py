@@ -14,14 +14,12 @@ import py_win_keyboard_layout as pwkl
 from typing import List
 from reapy import reascript_api as RPR
 from tkinter import filedialog
+from mainUI import start, create_config
 
 
 def get_config():
     config = configparser.ConfigParser()
     config.read('config.ini')
-    if not os.path.exists('config.ini'):
-        with open('config.ini', "w") as config_file:
-            config.write(config_file)
     return config
 
 
@@ -79,14 +77,15 @@ def checkbox_window():
     master.geometry('450x250')
     master.title('Выберите нужные опции')
     OPTIONS = [
-        'dubbers_volume_up',
-        'item_subs',
-        'region_subs',
         'split',
-        'normalize_dubbers',
-        'normalize_raw',
+        'normalize',
+        'normalize_video',
+        'volume',
+        'sub_item',
+        'sub_region',
         'render_audio',
-        'make_video',
+        'render_video',
+        'create_folder',
     ]
     config = get_config()
     checkboxes = create_widgets(OPTIONS, master, config)
@@ -116,11 +115,10 @@ def load_path_from_config(name):
 def get_value_from_config(name: str):
     """Функция для загрузки значения из файла конфигурации"""
     config = get_config()
-    try:
-        value = config['OPTIONS'][name]
-    except KeyError:
-        value = None
-    return value
+    value = config['OPTIONS'][name]
+    if value:
+        return True
+    return False
 
 
 # Функция меняет раскладку на нужную сама, но скрипт нужно перезапустить
@@ -253,7 +251,6 @@ def file_works(folder: str):
     mkv_video = get_path_to_files(folder, '*.mkv')
     if mkv_video:
         mkv_video = video_rename(folder, mkv_video)
-        subs_extract(folder, mkv_video, 'ass')
     mp4_video = get_path_to_files(folder, '*.mp4')
     if mp4_video:
         mp4_video = video_rename(folder, mp4_video)
@@ -261,20 +258,25 @@ def file_works(folder: str):
     if subs:
         subs = subs_rename(folder, subs)
     else:
+        ass_subs = get_path_to_files(folder, '*.ass')
+        if not ass_subs:
+            if mkv_video:
+                subs_extract(folder, mkv_video, 'ass')
+                ass_subs = get_path_to_files(folder, '*.ass')
+        if ass_subs:
+            ass_sub_convert(folder)
         vtt_subs = get_path_to_files(folder, '*.vtt')
         if vtt_subs:
             vtt_sub_convert(folder, vtt_subs)
-        ass_subs = get_path_to_files(folder, '*.ass')
-        if ass_subs:
-            ass_sub_convert(folder)
         srt_subs = get_path_to_files(folder, '*.srt')
         if srt_subs:
             subs = subs_rename(folder, srt_subs)
         else:
             try:
-                subs_extract(folder, mkv_video, 'srt')
-                subs = get_path_to_files(folder, '*.srt')
-                subs = subs_rename(folder, subs)
+                if mkv_video:
+                    subs_extract(folder, mkv_video, 'srt')
+                    subs = get_path_to_files(folder, '*.srt')
+                    subs = subs_rename(folder, subs)
             except IndexError:
                 pass
     return flac_audio, wav_audio, mkv_video, mp4_video, subs
@@ -334,8 +336,8 @@ def video_select(
 # в остальных случаях лучше закомментировать 2 раза ниже в коде
 def volume_up(track):
     """Функция для увеличения исходной громкости дорог"""
-    value = get_value_from_config('dubbers_volume_up')
-    if value == 'True':
+    value = get_value_from_config('volume')
+    if value:
         item = RPR.GetTrackMediaItem(track, 0)
         RPR.SetMediaItemInfo_Value(item, 'D_VOL', 1.5)
     else:
@@ -390,7 +392,7 @@ def get_info_values():
 def split(video_item, split_sleep):
     """Функция для разделения дорог на айтемы"""
     value = get_value_from_config('split')
-    if value == 'True':
+    if value:
         RPR.SetMediaItemSelected(video_item, False)
         RPR.Main_OnCommand(40760, 0)
         time.sleep(split_sleep)
@@ -405,12 +407,12 @@ def normalize(video_item):
     normalize_loudness = RPR.NamedCommandLookup(
             '_BR_NORMALIZE_LOUDNESS_ITEMS23'
         )
-    value = get_value_from_config('normalize_dubbers')
-    if value == 'True':
+    value = get_value_from_config('normalize')
+    if value:
         RPR.SetMediaItemSelected(video_item, False)
         RPR.Main_OnCommand(normalize_loudness, 0)
-    value = get_value_from_config('normalize_raw')
-    if value == 'True':
+    value = get_value_from_config('normalize_video')
+    if value:
         RPR.SelectAllMediaItems(0, False)
         RPR.SetMediaItemSelected(video_item, True)
         RPR.Main_OnCommand(normalize_loudness, 0)
@@ -424,8 +426,8 @@ def normalize(video_item):
 # и все пути к рабочей папке должны быть на английском
 def import_subs(subs: List[str]):
     """Функция для добавления субтитров"""
-    value = get_value_from_config('region_subs')
-    if value == 'True':
+    value = get_value_from_config('sub_region')
+    if value:
         if len(subs) > 1:
             tkinter.messagebox.showinfo(
                     'Много Субтитров',
@@ -450,8 +452,8 @@ def import_subs(subs: List[str]):
 
 def import_subs_items(subs: List[str]):
     """Функция для добавления субтитров"""
-    value = get_value_from_config('item_subs')
-    if value == 'True':
+    value = get_value_from_config('sub_item')
+    if value:
         if len(subs) > 1:
             tkinter.messagebox.showinfo(
                     'Много Субтитров',
@@ -493,7 +495,7 @@ def project_save(folder: str):
 def render(folder: str):
     """Функция для рендеринга файла"""
     value = get_value_from_config('render_audio')
-    if value == 'True':
+    if value:
         RPR.Main_OnCommand(40015, 0)
         time.sleep(1)
         pyautogui.typewrite('audio')
@@ -511,7 +513,7 @@ def render(folder: str):
 def reaper_close(lenght: float):
     """Функция для закрытия REAPER"""
     value = get_value_from_config('render_audio')
-    if value == 'True':
+    if value:
         X_FILE = 0.13
         sleep = lenght / X_FILE
         time.sleep(sleep)
@@ -523,8 +525,8 @@ def reaper_close(lenght: float):
 
 
 def audio_convert(folder: str):
-    value = get_value_from_config('make_video')
-    if value == 'True':
+    value = get_value_from_config('render_video')
+    if value:
         command = f'ffmpeg -i {folder}/audio.wav -ab 256k {folder}/audio.aac'
         subprocess.call(command, shell=True)
     else:
@@ -536,8 +538,8 @@ def make_episode(
         mkv_video: List[str],
         mp4_video: List[str]
         ):
-    value = get_value_from_config('make_video')
-    if value == 'True':
+    value = get_value_from_config('render_video')
+    if value:
         title = folder.split('/')[-2]
         s_number = os.path.basename(folder)
         if mkv_video:
@@ -559,11 +561,13 @@ def make_episode(
 # Чтобы Reaper API подгрузился он должен быть включен при запуске скрипта
 def main():
     """Основная функция"""
-    keyboard_check()
-    checkbox_window()
     tkinter.Tk().withdraw()
-    reaper_check()
-    folder = choice_folder()
+    keyboard_check()
+    create_config()
+    # checkbox_window()
+    # tkinter.Tk().withdraw()
+    # reaper_check()
+    folder = start()
     flac_audio, wav_audio, mkv_video, mp4_video, subs = file_works(folder)
     reaper_run()
     project = reapy.Project()
