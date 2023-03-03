@@ -17,7 +17,6 @@ from typing import List
 from reapy import reascript_api as RPR
 
 
-
 #настройка конфига
 def create_config():
     config = configparser.ConfigParser()
@@ -49,7 +48,7 @@ def save_path_to_config(name, path):
         config['PATHS'] = {}
     config['PATHS'][name] = path
     with open('config.ini', 'w') as config_file:
-           config.write(config_file)
+        config.write(config_file)
 
 def load_path_from_config(name):
     """Функция для загрузки пути из файла конфигурации"""

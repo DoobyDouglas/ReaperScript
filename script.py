@@ -258,9 +258,11 @@ def file_works(folder: str):
     if subs:
         subs = subs_rename(folder, subs)
     else:
-        if mkv_video:
-            subs_extract(folder, mkv_video, 'ass')
         ass_subs = get_path_to_files(folder, '*.ass')
+        if not ass_subs:
+            if mkv_video:
+                subs_extract(folder, mkv_video, 'ass')
+                ass_subs = get_path_to_files(folder, '*.ass')
         if ass_subs:
             ass_sub_convert(folder)
         vtt_subs = get_path_to_files(folder, '*.vtt')
@@ -271,9 +273,10 @@ def file_works(folder: str):
             subs = subs_rename(folder, srt_subs)
         else:
             try:
-                subs_extract(folder, mkv_video, 'srt')
-                subs = get_path_to_files(folder, '*.srt')
-                subs = subs_rename(folder, subs)
+                if mkv_video:
+                    subs_extract(folder, mkv_video, 'srt')
+                    subs = get_path_to_files(folder, '*.srt')
+                    subs = subs_rename(folder, subs)
             except IndexError:
                 pass
     return flac_audio, wav_audio, mkv_video, mp4_video, subs
@@ -561,9 +564,9 @@ def main():
     tkinter.Tk().withdraw()
     keyboard_check()
     create_config()
-    #checkbox_window()
-    #tkinter.Tk().withdraw()
-    #reaper_check()
+    # checkbox_window()
+    # tkinter.Tk().withdraw()
+    # reaper_check()
     folder = start()
     flac_audio, wav_audio, mkv_video, mp4_video, subs = file_works(folder)
     reaper_run()
