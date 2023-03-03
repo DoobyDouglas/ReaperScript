@@ -14,6 +14,7 @@ import py_win_keyboard_layout as pwkl
 from typing import List
 from reapy import reascript_api as RPR
 from tkinter import filedialog
+from mainUI import start, create_config
 
 
 def get_config():
@@ -79,14 +80,15 @@ def checkbox_window():
     master.geometry('450x250')
     master.title('Выберите нужные опции')
     OPTIONS = [
-        'dubbers_volume_up',
-        'item_subs',
-        'region_subs',
         'split',
-        'normalize_dubbers',
-        'normalize_raw',
+        'normalize',
+        'normalize_video',
+        'volume',
+        'sub_item',
+        'sub_region',
         'render_audio',
-        'make_video',
+        'render_video',
+        'create_folder',
     ]
     config = get_config()
     checkboxes = create_widgets(OPTIONS, master, config)
@@ -559,11 +561,13 @@ def make_episode(
 # Чтобы Reaper API подгрузился он должен быть включен при запуске скрипта
 def main():
     """Основная функция"""
-    keyboard_check()
-    checkbox_window()
     tkinter.Tk().withdraw()
-    reaper_check()
-    folder = choice_folder()
+    keyboard_check()
+    create_config()
+    #checkbox_window()
+    #tkinter.Tk().withdraw()
+    #reaper_check()
+    folder = start()
     flac_audio, wav_audio, mkv_video, mp4_video, subs = file_works(folder)
     reaper_run()
     project = reapy.Project()

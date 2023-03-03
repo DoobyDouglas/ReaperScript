@@ -6,14 +6,14 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>800</width>
-    <height>800</height>
+    <width>620</width>
+    <height>582</height>
    </rect>
   </property>
   <property name="minimumSize">
    <size>
-    <width>800</width>
-    <height>800</height>
+    <width>620</width>
+    <height>582</height>
    </size>
   </property>
   <property name="maximumSize">
@@ -45,10 +45,10 @@
      <string>Выбрать</string>
     </property>
    </widget>
-   <widget class="QCheckBox" name="split">
+   <widget class="QCheckBox" name="checkBox">
     <property name="geometry">
      <rect>
-      <x>40</x>
+      <x>20</x>
       <y>230</y>
       <width>70</width>
       <height>17</height>
@@ -57,12 +57,15 @@
     <property name="text">
      <string>Сплит</string>
     </property>
+    <property name="checked">
+     <bool>false</bool>
+    </property>
    </widget>
-   <widget class="QCheckBox" name="normalize">
+   <widget class="QCheckBox" name="checkBox_2">
     <property name="geometry">
      <rect>
-      <x>40</x>
-      <y>280</y>
+      <x>20</x>
+      <y>260</y>
       <width>131</width>
       <height>17</height>
      </rect>
@@ -71,17 +74,17 @@
      <string>Нормализация дорог</string>
     </property>
    </widget>
-   <widget class="QCheckBox" name="dubbers_volume_up">
+   <widget class="QCheckBox" name="checkBox_3">
     <property name="geometry">
      <rect>
-      <x>40</x>
-      <y>330</y>
+      <x>20</x>
+      <y>290</y>
       <width>141</width>
       <height>17</height>
      </rect>
     </property>
     <property name="text">
-     <string>Громкость Дабберов</string>
+     <string>Нормализация видео</string>
     </property>
    </widget>
    <widget class="QLineEdit" name="lineEdit">
@@ -92,6 +95,9 @@
       <width>181</width>
       <height>20</height>
      </rect>
+    </property>
+    <property name="text">
+     <string/>
     </property>
     <property name="readOnly">
      <bool>true</bool>
@@ -230,14 +236,92 @@
    <widget class="QPushButton" name="pushButton_5">
     <property name="geometry">
      <rect>
-      <x>320</x>
-      <y>510</y>
+      <x>250</x>
+      <y>530</y>
       <width>75</width>
       <height>23</height>
      </rect>
     </property>
     <property name="text">
      <string>Выбрать</string>
+    </property>
+   </widget>
+   <widget class="QCheckBox" name="checkBox_4">
+    <property name="geometry">
+     <rect>
+      <x>20</x>
+      <y>320</y>
+      <width>141</width>
+      <height>17</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Поднятие громкости дабберов +1.5</string>
+    </property>
+   </widget>
+   <widget class="QCheckBox" name="checkBox_5">
+    <property name="geometry">
+     <rect>
+      <x>20</x>
+      <y>350</y>
+      <width>191</width>
+      <height>17</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Добавление субтитров Item</string>
+    </property>
+   </widget>
+   <widget class="QCheckBox" name="checkBox_6">
+    <property name="geometry">
+     <rect>
+      <x>20</x>
+      <y>380</y>
+      <width>181</width>
+      <height>17</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Добавление субтитров Region</string>
+    </property>
+   </widget>
+   <widget class="QCheckBox" name="checkBox_7">
+    <property name="geometry">
+     <rect>
+      <x>20</x>
+      <y>410</y>
+      <width>141</width>
+      <height>17</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Рендер аудио (сразу)</string>
+    </property>
+   </widget>
+   <widget class="QCheckBox" name="checkBox_8">
+    <property name="geometry">
+     <rect>
+      <x>20</x>
+      <y>440</y>
+      <width>141</width>
+      <height>17</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Рендер видео (сразу)</string>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="pushButton_6">
+    <property name="geometry">
+     <rect>
+      <x>30</x>
+      <y>540</y>
+      <width>75</width>
+      <height>23</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Настройка</string>
     </property>
    </widget>
   </widget>
