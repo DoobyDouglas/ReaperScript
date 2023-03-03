@@ -255,7 +255,6 @@ def file_works(folder: str):
     mkv_video = get_path_to_files(folder, '*.mkv')
     if mkv_video:
         mkv_video = video_rename(folder, mkv_video)
-        subs_extract(folder, mkv_video, 'ass')
     mp4_video = get_path_to_files(folder, '*.mp4')
     if mp4_video:
         mp4_video = video_rename(folder, mp4_video)
@@ -263,12 +262,14 @@ def file_works(folder: str):
     if subs:
         subs = subs_rename(folder, subs)
     else:
-        vtt_subs = get_path_to_files(folder, '*.vtt')
-        if vtt_subs:
-            vtt_sub_convert(folder, vtt_subs)
+        if mkv_video:
+            subs_extract(folder, mkv_video, 'ass')
         ass_subs = get_path_to_files(folder, '*.ass')
         if ass_subs:
             ass_sub_convert(folder)
+        vtt_subs = get_path_to_files(folder, '*.vtt')
+        if vtt_subs:
+            vtt_sub_convert(folder, vtt_subs)
         srt_subs = get_path_to_files(folder, '*.srt')
         if srt_subs:
             subs = subs_rename(folder, srt_subs)
