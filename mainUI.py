@@ -210,10 +210,10 @@ def start():
 
         with open('config.ini', 'w') as config_file:
             config.write(config_file)
+        app.exit()
 
     form.pushButton_5.clicked.connect(checkboxUI)
     app.exec()
-    return folder
 
 
 if __name__ == '__main__':
