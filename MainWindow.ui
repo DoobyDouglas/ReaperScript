@@ -45,7 +45,7 @@
      <string>Выбрать</string>
     </property>
    </widget>
-   <widget class="QCheckBox" name="checkBox">
+   <widget class="QCheckBox" name="split">
     <property name="geometry">
      <rect>
       <x>40</x>
@@ -58,7 +58,7 @@
      <string>Сплит</string>
     </property>
    </widget>
-   <widget class="QCheckBox" name="checkBox_2">
+   <widget class="QCheckBox" name="normalize">
     <property name="geometry">
      <rect>
       <x>40</x>
@@ -71,7 +71,7 @@
      <string>Нормализация дорог</string>
     </property>
    </widget>
-   <widget class="QCheckBox" name="checkBox_3">
+   <widget class="QCheckBox" name="dubbers_volume_up">
     <property name="geometry">
      <rect>
       <x>40</x>
@@ -81,7 +81,7 @@
      </rect>
     </property>
     <property name="text">
-     <string>Нормализация видео</string>
+     <string>Громкость Дабберов</string>
     </property>
    </widget>
    <widget class="QLineEdit" name="lineEdit">
