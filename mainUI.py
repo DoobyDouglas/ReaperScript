@@ -1,6 +1,6 @@
 from PyQt5 import uic, QtWidgets
 from PyQt5.QtWidgets import QApplication
-from nufile import (
+from funcs import (
     keyboard_check,
     reaper_run,
     file_works,
@@ -12,6 +12,7 @@ from nufile import (
     get_info_values,
     split,
     normalize,
+    normalize_raw,
     render,
     reaper_close,
     audio_convert,
@@ -24,27 +25,37 @@ import os
 import reapy
 import tkinter
 
+OPTIONS = [
+        'split',
+        'normalize',
+        'normalize_video',
+        'volume',
+        'sub_item',
+        'sub_region',
+        'render_audio',
+        'render_video',
+        'create_folder',
+    ]
+
+PATHS = [
+    'fx_chains_folder',
+    'reaper_path',
+    'project_path',
+    'folder_file',
+]
+
 
 # настройка конфига
 def create_config():
     config = configparser.ConfigParser()
     config.read('config.ini')
     if not os.path.exists('config.ini'):
-        config = configparser.ConfigParser()
-        config.add_section("PATHS")
-        config.set("PATHS", "fx_chains_folder", "")
-        config.set("PATHS", "reaper_path", "")
-        config.set("PATHS", "project_path", "")
-        config.set("PATHS", "folder_file", "")
-        config.add_section("OPTIONS")
-        config.set("OPTIONS", "split", "")
-        config.set("OPTIONS", "normalize", "")
-        config.set("OPTIONS", "normalize_video", "")
-        config.set("OPTIONS", "volume", "")
-        config.set("OPTIONS", "sub_item", "")
-        config.set("OPTIONS", "sub_region", "")
-        config.set("OPTIONS", "render_audio", "")
-        config.set("OPTIONS", "render_video", "")
+        config.add_section('PATHS')
+        for path in PATHS:
+            config.set('PATHS', path, '')
+        config.add_section('OPTIONS')
+        for option in OPTIONS:
+            config.set('OPTIONS', option, '')
         with open('config.ini', "w") as config_file:
             config.write(config_file)
     return config
@@ -159,6 +170,7 @@ def start():
 
         if form.checkBox_4.isChecked():
             config['OPTIONS']['volume'] = '1'
+            # Нужно написать новую фуннкцию, к старой не обратиться
         else:
             config['OPTIONS']['volume'] = ' '
 
@@ -188,7 +200,7 @@ def start():
 
         if form.checkBox_3.isChecked():
             config['OPTIONS']['normalize_video'] = '1'
-            normalize(video_item)
+            normalize_raw(video_item)
         else:
             config['OPTIONS']['normalize_video'] = ' '
 
