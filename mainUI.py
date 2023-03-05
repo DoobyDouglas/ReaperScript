@@ -19,8 +19,7 @@ from typing import List
 from reapy import reascript_api as RPR
 
 
-
-#настройка конфига
+# настройка конфига
 def get_config():
     config = configparser.ConfigParser()
     config.read('config.ini')
@@ -293,10 +292,22 @@ def start():
 
         #project = reapy.Project() чекнуть потом
 
-        #выделение видео
+        # Добавляем сабы айтемы
+        if form.checkBox_5.isChecked():
+            config['OPTIONS']['sub_item'] = '1'
+            if localsub == 'NotFound':
+                pass
+            else:
+                pyautogui.press('/')
+                time.sleep(1)
+                fix_path = localsub.replace('/', '\\')
+                pyautogui.typewrite(fix_path)
+                pyautogui.press('enter')
 
+        else:
+            config['OPTIONS']['sub_item'] = ' '
 
-        #выделение аудио
+        # выделение аудио
         for file in flac_audio:
             RPR.InsertMedia(file, 1)
             track = RPR.GetLastTouchedTrack()
@@ -320,6 +331,20 @@ def start():
             raise SystemExit
         
         RPR.InsertMedia(videofolder, (1 << 9) | 0)
+
+        # Добавляем сабы регионы
+        if form.checkBox_6.isChecked():
+            config['OPTIONS']['sub_region'] = '1'
+            if localsub == 'NotFound':
+                pass
+            else:
+                pyautogui.press('i')
+                time.sleep(1)
+                fix_path = localsub.replace('/', '\\')
+                pyautogui.typewrite(fix_path)
+                pyautogui.press('enter')
+        else:
+            config['OPTIONS']['sub_region'] = ' '
         
         #запись чекбоксов
         if form.checkBox_9.isChecked():
@@ -356,24 +381,6 @@ def start():
             #функция громкости
         else:
             config['OPTIONS']['volume'] = ' '
-            print("Не нормальизую")
-
-        if form.checkBox_5.isChecked():
-            config['OPTIONS']['sub_item'] = '1'
-            if localsub == 'NotFound':
-                #функция
-                print('Не делаем')
-            else:
-                print('Делаем функцию')
-        else:
-            config['OPTIONS']['sub_item'] = ' '
-            print("Не нормальизую")
-            
-        if form.checkBox_6.isChecked():
-            config['OPTIONS']['sub_region'] = '1'
-            #функция субтитров регион
-        else:
-            config['OPTIONS']['sub_region'] = ' '
             print("Не нормальизую")
             
         if form.checkBox_7.isChecked():
