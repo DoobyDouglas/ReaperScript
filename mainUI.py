@@ -19,30 +19,41 @@ from typing import List
 from reapy import reascript_api as RPR
 
 
+PATHS = [
+    'fx_chains_folder',
+    'reaper_path',
+    'project_path',
+    'folder_file',
+]
+
+OPTIONS = [
+        'split',
+        'normalize',
+        'normalize_video',
+        'volume',
+        'sub_item',
+        'sub_region',
+        'render_audio',
+        'render_video',
+        'newfolder',
+    ]
+
+
 # настройка конфига
 def get_config():
     config = configparser.ConfigParser()
     config.read('config.ini')
     if not os.path.exists('config.ini'):
-        config = configparser.ConfigParser()
-        config.add_section("PATHS")
-        config.set("PATHS", "fx_chains_folder", "")
-        config.set("PATHS", "reaper_path", "")
-        config.set("PATHS", "project_path", "") 
-        config.set("PATHS", "folder_file", "") 
-        config.add_section("OPTIONS")
-        config.set("OPTIONS", "split", "")
-        config.set("OPTIONS", "normalize", "")
-        config.set("OPTIONS", "normalize_video", "")
-        config.set("OPTIONS", "volume", "")
-        config.set("OPTIONS", "sub_item", "")
-        config.set("OPTIONS", "sub_region", "")
-        config.set("OPTIONS", "render_audio", "")
-        config.set("OPTIONS", "render_video", "")
-        config.set("OPTIONS", "newfolder", "")
+        config.add_section('PATHS')
+        for path in PATHS:
+            config.set('PATHS', path, '')
+        config.add_section('OPTIONS')
+        for option in OPTIONS:
+            config.set('OPTIONS', option, '')
         with open('config.ini', "w") as config_file:
             config.write(config_file)
     return config
+
 
 def save_path_to_config(name, path):
     """Функция для сохранения пути в файл конфигурации"""
@@ -51,7 +62,8 @@ def save_path_to_config(name, path):
         config['PATHS'] = {}
     config['PATHS'][name] = path
     with open('config.ini', 'w') as config_file:
-           config.write(config_file)
+        config.write(config_file)
+
 
 def load_path_from_config(name):
     """Функция для загрузки пути из файла конфигурации"""
@@ -61,6 +73,7 @@ def load_path_from_config(name):
     except KeyError:
         path = None
     return path
+
 
 def start():
     Form, Window = uic.loadUiType("MainWindow.ui")
@@ -293,6 +306,7 @@ def start():
         #project = reapy.Project() чекнуть потом
 
         # Добавляем сабы айтемы
+        time.sleep(1)
         if form.checkBox_5.isChecked():
             config['OPTIONS']['sub_item'] = '1'
             if localsub == 'NotFound':
