@@ -151,6 +151,7 @@ def start():
     form.checkBox_6.setChecked(bool(config['OPTIONS']['sub_region']))
     form.checkBox_7.setChecked(bool(config['OPTIONS']['render_audio']))
     form.checkBox_8.setChecked(bool(config['OPTIONS']['render_video']))
+    form.checkBox_9.setChecked(bool(config['OPTIONS']['newfolder']))
 
     def checkboxUI(param: str):
         config = get_config()
@@ -251,33 +252,40 @@ def start():
             localsub = 'NotFound'
         #localsub - путь к файлу сабов, videofolder - путь к видеофайлу 
         
+        #нахождение неправильных форматов и переименовка
         if glob.glob(os.path.join(folder, '*.flac*')):
             flac_audio = glob.glob(os.path.join(folder, '*.flac*'))
             if flac_audio:
                 for file in flac_audio:
                     if '.reapeaks' not in file.lower():
-                        try:
-                            filename = os.path.splitext(file)[0]
-                            os.rename(file, filename + '.flac')
-                        except FileExistsError:
-                            reapy.print('Файл уже существует')
-                            raise SystemExit
-                        except PermissionError:
-                            reapy.print('Файл используется')
-                            raise SystemExit
+                        filename = os.path.splitext(file)[0]
+                        os.rename(file, filename + '.flac')
                     else:
                         pass
+        #находить нормальные файла      
+        flac_audio = glob.glob(os.path.join(folder, '*.flac'))
+        #изменение на нормальный путь
         flac_audio = list(map(lambda x: x.replace('\\', '/'), flac_audio))
-        print(flac_audio)    
-
-
-
-
-
+        
+        if glob.glob(os.path.join(folder, '*.wav*')):
+            wav_audio = glob.glob(os.path.join(folder, '*.wav*'))
+            if flac_audio:
+                for file in flac_audio:
+                    if '.reapeaks' not in file.lower():
+                        filename = os.path.splitext(file)[0]
+                        os.rename(file, filename + '.wav')
+                    else:
+                        pass
+        #находить нормальные файла                      
+        wav_audio = glob.glob(os.path.join(folder, '*.wav'))
+        #изменение на нормальный путь
+        wav_audio = list(map(lambda x: x.replace('\\', '/'), wav_audio))
+        
         #запись чекбоксов
         if form.checkBox_9.isChecked():
             config['OPTIONS']['newfolder'] = '1'
-            os.mkdir(folder + "/" + s_number)
+            if os.path.exists(f'{folder}/{s_number}') != True:
+                os.mkdir(folder + "/" + s_number)
         else:
             config['OPTIONS']['newfolder'] = ' '
             print("Не создаю")
