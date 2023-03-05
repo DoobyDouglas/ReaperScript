@@ -339,6 +339,17 @@ def import_subs(subs: List[str]):
             pass
 
 
+def import_subs_items(subs: str):
+    """Функция для добавления субтитров"""
+    pyautogui.hotkey('ctrl', 't')
+    time.sleep(1)
+    pyautogui.press('/')
+    time.sleep(1)
+    fix_path = subs.replace('/', '\\')
+    pyautogui.typewrite(fix_path)
+    pyautogui.press('enter')
+
+
 # В качестве имени сессии использует имя видео
 def project_save(folder: str):
     """Функция для сохранения проекта"""

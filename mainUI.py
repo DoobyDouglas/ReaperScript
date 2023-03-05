@@ -297,29 +297,33 @@ def start():
                 for file in flac_audio:
                     if '.reapeaks' not in file.lower():
                         filename = os.path.splitext(file)[0]
-                        os.rename(file, filename + '.flac')
+                        ext = os.path.splitext(file)[-1]
+                        if ext != '.flac':
+                            os.rename(file, filename + '.flac')
                     else:
                         pass
-        #находить нормальные файла      
+        # находить нормальные файла
         flac_audio = glob.glob(os.path.join(folder, '*.flac'))
-        #изменение на нормальный путь
+        # изменение на нормальный путь
         flac_audio = list(map(lambda x: x.replace('\\', '/'), flac_audio))
-        
+
         if glob.glob(os.path.join(folder, '*.wav*')):
             wav_audio = glob.glob(os.path.join(folder, '*.wav*'))
             if flac_audio:
                 for file in flac_audio:
                     if '.reapeaks' not in file.lower():
                         filename = os.path.splitext(file)[0]
-                        os.rename(file, filename + '.wav')
+                        ext = os.path.splitext(file)[-1]
+                        if ext != '.wav':
+                            os.rename(file, filename + '.wav')
                     else:
                         pass
-        #находить нормальные файла                      
+        # находить нормальные файла
         wav_audio = glob.glob(os.path.join(folder, '*.wav'))
-        #изменение на нормальный путь
+        # изменение на нормальный путь
         wav_audio = list(map(lambda x: x.replace('\\', '/'), wav_audio))
 
-        #настройка чейнов
+        # настройка чейнов
         fx_dict = {}
         fx_chains_folder = load_path_from_config('fx_chains_folder')
         fx_chains = glob.glob(os.path.join(fx_chains_folder, '*.RfxChain'))
@@ -328,13 +332,14 @@ def start():
             dubber_name = fx_chain_name.split('.')[-2].lower()
             fx_dict[dubber_name] = fx_chain_name
 
-        #загрузка 
+        # загрузка
         subprocess.run([load_path_from_config('reaper_path'), load_path_from_config('project_path')])
+        time.sleep(1)
 
-        #Проверка на папку
+        # Проверка на папку
         if form.checkBox_9.isChecked():
             config['OPTIONS']['newfolder'] = '1'
-            if os.path.exists(f'{folder}/{s_number}') == False: #если нет внутри такой папки то создает её
+            if os.path.exists(f'{folder}/{s_number}') == False:  # если нет внутри такой папки то создает её
                 os.mkdir(folder + "/" + s_number)
                 new_folder = f'{folder}/{s_number}'
                 new_porject_path = new_folder.replace('/', '\\') + '\\' + f'{s_number}'
@@ -417,56 +422,73 @@ def start():
                 pyautogui.press('enter')
         else:
             config['OPTIONS']['sub_region'] = ' '
-        
-        #запись чекбоксов
 
+        # Можно дать больше времени на работу сплита,
+        # если уменьшить значение X_FILE
+        # Значения пригодятся и в других функциях
+        X_FILE = 5
+        video_item = RPR.GetMediaItem(0, 0)
+        lenght = RPR.GetMediaItemInfo_Value(video_item, "D_LENGTH") / 60
+        sleep = lenght / X_FILE
+        all_tracks = RPR.GetNumTracks()
+        dub_tracks = all_tracks - 2
+        split_sleep = dub_tracks * sleep
+
+        # Сплит
         if form.checkBox.isChecked():
             config['OPTIONS']['split'] = '1'
-            #функция сплита
+            RPR.SetMediaItemSelected(video_item, False)
+            RPR.Main_OnCommand(40760, 0)
+            time.sleep(split_sleep)
+            pyautogui.press('enter')
+            time.sleep(1)
         else:
             config['OPTIONS']['split'] = ' '
-            print("Не сплитую")
+
+        normalize_loudness = RPR.NamedCommandLookup(
+            '_BR_NORMALIZE_LOUDNESS_ITEMS23'
+        )
 
         if form.checkBox_2.isChecked():
             config['OPTIONS']['normalize'] = '1'
-            #функция нормалайза
+            RPR.SelectAllMediaItems(0, True)
+            RPR.SetMediaItemSelected(video_item, False)
+            RPR.Main_OnCommand(normalize_loudness, 0)
         else:
             config['OPTIONS']['normalize'] = ' '
-            print("Не нормальизую")
 
         if form.checkBox_3.isChecked():
             config['OPTIONS']['normalize_video'] = '1'
-            #функция нормалайза видео
+            RPR.SelectAllMediaItems(0, False)
+            RPR.SetMediaItemSelected(video_item, True)
+            RPR.Main_OnCommand(normalize_loudness, 0)
         else:
             config['OPTIONS']['normalize_video'] = ' '
-            print("Не нормальизую")
-            
+
+
         if form.checkBox_4.isChecked():
             config['OPTIONS']['volume'] = '1'
-            #функция громкости
+            # функция громкости
         else:
             config['OPTIONS']['volume'] = ' '
             print("Не нормальизую")
-            
+
         if form.checkBox_7.isChecked():
             config['OPTIONS']['render_audio'] = '1'
-            #функция рендер аудио
+            # функция рендер аудио
         else:
             config['OPTIONS']['render_audio'] = ' '
             print("Не нормальизую")
-            
+
         if form.checkBox_8.isChecked():
             config['OPTIONS']['render_video'] = '1'
-            #функция рендер видео
+            # функция рендер видео
         else:
             config['OPTIONS']['render_video'] = ' '
             print("Не нормальизую")
 
         with open('config.ini', 'w') as config_file:
             config.write(config_file)
-
-           
-
 
     form.pushButton_5.clicked.connect(checkboxUI)
     app.exec()
