@@ -40,6 +40,7 @@ def get_config():
         config.set("OPTIONS", "sub_region", "")
         config.set("OPTIONS", "render_audio", "")
         config.set("OPTIONS", "render_video", "")
+        config.set("OPTIONS", "newfolder", "")
         with open('config.ini', "w") as config_file:
             config.write(config_file)
     return config
@@ -70,9 +71,6 @@ def start():
     form = Form()
     form.setupUi(window)
     window.show()
-
-
-
 
     form.lineEdit_3.setText(load_path_from_config('reaper_path'))   
     form.lineEdit_2.setText(load_path_from_config('project_path'))  
@@ -280,6 +278,48 @@ def start():
         wav_audio = glob.glob(os.path.join(folder, '*.wav'))
         #изменение на нормальный путь
         wav_audio = list(map(lambda x: x.replace('\\', '/'), wav_audio))
+
+        #настройка чейнов
+        fx_dict = {}
+        fx_chains_folder = load_path_from_config('fx_chains_folder')
+        fx_chains = glob.glob(os.path.join(fx_chains_folder, '*.RfxChain'))
+        for chain in fx_chains:
+            fx_chain_name = chain.split('\\')[-1]
+            dubber_name = fx_chain_name.split('.')[-2].lower()
+            fx_dict[dubber_name] = fx_chain_name
+
+        #загрузка 
+        subprocess.run([load_path_from_config('reaper_path'), load_path_from_config('project_path')])
+
+        #project = reapy.Project() чекнуть потом
+
+        #выделение видео
+
+
+        #выделение аудио
+        for file in flac_audio:
+            RPR.InsertMedia(file, 1)
+            track = RPR.GetLastTouchedTrack()
+            for name in fx_dict:
+                if name in file.split('\\')[-1].lower():
+                    RPR.TrackFX_AddByName(track, fx_dict[name], 0, -1)
+                    RPR.GetSetMediaTrackInfo_String(
+                        track, 'P_NAME', name.upper(), True
+                    )
+        for file in wav_audio:
+            RPR.InsertMedia(file, 0)
+            track = RPR.GetLastTouchedTrack()
+            for name in fx_dict:
+                if name in file.split('\\')[-1].lower():
+                    RPR.TrackFX_AddByName(track, fx_dict[name], 0, -1)
+                    RPR.GetSetMediaTrackInfo_String(
+                        track, 'P_NAME', name.upper(), True
+                    )
+        if not flac_audio and not wav_audio:
+            reapy.print('В рабочей папке нет аудио, подходящего формата')
+            raise SystemExit
+        
+        RPR.InsertMedia(videofolder, (1 << 9) | 0)
         
         #запись чекбоксов
         if form.checkBox_9.isChecked():
