@@ -1,7 +1,9 @@
 from PyQt5 import uic, QtWidgets
-from PyQt5.QtWidgets import QApplication
+from PyQt5.QtWidgets import QApplication, QMessageBox
 import configparser
 
+from pathlib import Path
+import asstosrt
 import os
 import subprocess
 import time
@@ -17,8 +19,9 @@ from typing import List
 from reapy import reascript_api as RPR
 
 
+
 #настройка конфига
-def create_config():
+def get_config():
     config = configparser.ConfigParser()
     config.read('config.ini')
     if not os.path.exists('config.ini'):
@@ -43,16 +46,16 @@ def create_config():
 
 def save_path_to_config(name, path):
     """Функция для сохранения пути в файл конфигурации"""
-    config = create_config()
+    config = get_config()
     if 'PATHS' not in config:
         config['PATHS'] = {}
     config['PATHS'][name] = path
     with open('config.ini', 'w') as config_file:
-        config.write(config_file)
+           config.write(config_file)
 
 def load_path_from_config(name):
     """Функция для загрузки пути из файла конфигурации"""
-    config = create_config()
+    config = get_config()
     try:
         path = config['PATHS'][name]
     except KeyError:
@@ -139,7 +142,7 @@ def start():
     #чекбоксы
 
     #считывание и расстановка чекбоксов
-    config = create_config()
+    config = get_config()
     form.checkBox.setChecked(bool(config['OPTIONS']['split']))
     form.checkBox_2.setChecked(bool(config['OPTIONS']['normalize']))
     form.checkBox_3.setChecked(bool(config['OPTIONS']['normalize_video']))
@@ -149,21 +152,136 @@ def start():
     form.checkBox_7.setChecked(bool(config['OPTIONS']['render_audio']))
     form.checkBox_8.setChecked(bool(config['OPTIONS']['render_video']))
 
+    def checkboxUI(param: str):
+        config = get_config()
+        #Функция для проверки раскладки клавиатуры
+        current_layout = pwkl.get_foreground_window_keyboard_layout()
+        if current_layout != 67699721:
+            pwkl.change_foreground_window_keyboard_layout(0x00000409)
+            QMessageBox.about(None, "Ошибка", "Неправильная раскладка. Если раскладнка не поменялась сама - поменяйте вручную")
 
-    #'dubbers_volume_up',
-    #'item_subs',
-    #'region_subs',
-    #'split', +
-    #'normalize', +
-    #'render_audio',
-    #'make_video'
-    
+        #Функция для изменения имени видео, создание папки, вытаскивание субтитров, конвертация субтитров vtt
+        s_number = os.path.basename(folder)
+        fileExtMp4 = r".mp4"
+        fileExtMkv = r".mkv"
+        videonamemp4 = ''.join(([_ for _ in os.listdir(folder) if _.endswith(fileExtMp4)]))
+        videonamemkv = ''.join(([_ for _ in os.listdir(folder) if _.endswith(fileExtMkv)]))
 
-    def checkboxUI():
+        if bool(videonamemp4) == True:
+            videoname = os.rename(folder + "/" + videonamemp4, folder + "/" + s_number + fileExtMp4)
+            videoname = ''.join(([_ for _ in os.listdir(folder) if _.endswith(fileExtMp4)]))
+            videofolder = f'{folder}/{videoname}'
+
+            if glob.glob(os.path.join(folder, '*.srt')):
+                subs = glob.glob(os.path.join(folder, '*.srt'))
+                filenamae = os.path.splitext(subs[0])[0].split('\\')[-2]
+                os.rename(subs[0], filenamae + '/' + s_number + '.srt')
+            elif glob.glob(os.path.join(folder, '*.vtt')):
+                subs = glob.glob(os.path.join(folder, '*.vtt'))
+                filenamae = os.path.splitext(subs[0])[0].split('\\')[-2]
+                os.rename(subs[0], filenamae + '/' + s_number + '.vtt')
+                command = f'ffmpeg -i {subs[0]} {folder}/{s_number}.srt'
+                subprocess.call(command, shell=True)
+            elif glob.glob(os.path.join(folder, '*.ass')): #нахождение ASS
+                subs = glob.glob(os.path.join(folder, '*.ass'))
+                filenamae = os.path.splitext(subs[0])[0].split('\\')[-2]
+                os.rename(subs[0], filenamae + '/' + s_number + '.ass')
+                disk = folder.split(':')[0].lower()
+                folder_path = folder.split(':')[1]
+                command1 = f'{disk}: && cd {folder_path} && asstosrt -e utf-8'
+                subprocess.call(command1, shell=True)
+            else:
+                command = f'ffmpeg -i {folder}/{videoname} {folder}/{s_number}.ass'
+                subprocess.call(command, shell=True)
+                if glob.glob(os.path.join(folder, '*.ass')): #если достал ASS конверт в SRT
+                    disk = folder.split(':')[0].lower()
+                    folder_path = folder.split(':')[1]
+                    command1 = f'{disk}: && cd {folder_path} && asstosrt -e utf-8'
+                    subprocess.call(command1, shell=True)
+                else: #если не достал ASS, пытается достать SRT
+                    command = f'ffmpeg -i {folder}/{videoname} {folder}/{s_number}.srt'
+                    subprocess.call(command, shell=True)
+        else:
+            videoname = os.rename(folder + "/" + videonamemkv, folder + "/" + s_number + fileExtMkv)
+            videoname = ''.join(([_ for _ in os.listdir(folder) if _.endswith(fileExtMkv)]))
+            videofolder = f'{folder}/{videoname}'
+
+            if glob.glob(os.path.join(folder, '*.srt')): #нахождение SRT
+                subs = glob.glob(os.path.join(folder, '*.srt'))
+                filenamae = os.path.splitext(subs[0])[0].split('\\')[-2]
+                os.rename(subs[0], filenamae + '/' + s_number + '.srt')
+            elif glob.glob(os.path.join(folder, '*.vtt')): #нахождение VTT
+                subs = glob.glob(os.path.join(folder, '*.vtt'))
+                filenamae = os.path.splitext(subs[0])[0].split('\\')[-2]
+                os.rename(subs[0], filenamae + '/' + s_number + '.vtt')
+                command = f'ffmpeg -i {subs[0]} {folder}/{s_number}.srt'
+                subprocess.call(command, shell=True)
+            elif glob.glob(os.path.join(folder, '*.ass')): #нахождение ASS
+                subs = glob.glob(os.path.join(folder, '*.ass'))
+                filenamae = os.path.splitext(subs[0])[0].split('\\')[-2]
+                os.rename(subs[0], filenamae + '/' + s_number + '.ass')
+                disk = folder.split(':')[0].lower()
+                folder_path = folder.split(':')[1]
+                command1 = f'{disk}: && cd {folder_path} && asstosrt -e utf-8'
+                subprocess.call(command1, shell=True)
+            else: #доставание ASS из MKV
+                command = f'ffmpeg -i {folder}/{videoname} -map 0:s:m:language:eng -map -0:s:m:title:SDH {folder}/{s_number}.ass'
+                subprocess.call(command, shell=True)
+                if glob.glob(os.path.join(folder, '*.ass')): #если достал ASS конверт в SRT
+                    disk = folder.split(':')[0].lower()
+                    folder_path = folder.split(':')[1]
+                    command1 = f'{disk}: && cd {folder_path} && asstosrt -e utf-8'
+                    subprocess.call(command1, shell=True)
+                else: #если не достал ASS, пытается достать SRT
+                    command = f'ffmpeg -i {folder}/{videoname} -map 0:s:m:language:eng -map -0:s:m:title:SDH {folder}/{s_number}.srt'
+                    subprocess.call(command, shell=True)
+        if glob.glob(os.path.join(folder, '*.srt')): #если есть после всех манипуляций в папке есть SRT, то привязываем полный путь к переменной
+            if glob.glob(os.path.join(folder, '*.ass')):
+                subs = glob.glob(os.path.join(folder, '*.ass'))
+                filenamae = os.path.splitext(subs[0])[0].split('\\')[-2]
+                os.rename(subs[0], filenamae + '/' + s_number + '.ass')
+                os.remove(f'{folder}/{s_number}.ass')
+            elif glob.glob(os.path.join(folder, '*.vtt')):
+                subs = glob.glob(os.path.join(folder, '*.vtt'))
+                filenamae = os.path.splitext(subs[0])[0].split('\\')[-2]
+                os.rename(subs[0], filenamae + '/' + s_number + '.vtt')
+                os.remove(glob.glob(os.path.join(folder, '*.vtt')))
+            localsub = f'{folder}/{s_number}.srt'
+        else: 
+            localsub = 'NotFound'
+        #localsub - путь к файлу сабов, videofolder - путь к видеофайлу 
+        
+        if glob.glob(os.path.join(folder, '*.flac*')):
+            flac_audio = glob.glob(os.path.join(folder, '*.flac*'))
+            if flac_audio:
+                for file in flac_audio:
+                    if '.reapeaks' not in file.lower():
+                        try:
+                            filename = os.path.splitext(file)[0]
+                            os.rename(file, filename + '.flac')
+                        except FileExistsError:
+                            reapy.print('Файл уже существует')
+                            raise SystemExit
+                        except PermissionError:
+                            reapy.print('Файл используется')
+                            raise SystemExit
+                    else:
+                        pass
+        flac_audio = list(map(lambda x: x.replace('\\', '/'), flac_audio))
+        print(flac_audio)    
+
+
+
+
 
         #запись чекбоксов
-        config = create_config()
-     
+        if form.checkBox_9.isChecked():
+            config['OPTIONS']['newfolder'] = '1'
+            os.mkdir(folder + "/" + s_number)
+        else:
+            config['OPTIONS']['newfolder'] = ' '
+            print("Не создаю")
+
         if form.checkBox.isChecked():
             config['OPTIONS']['split'] = '1'
             #функция сплита
@@ -184,7 +302,7 @@ def start():
         else:
             config['OPTIONS']['normalize_video'] = ' '
             print("Не нормальизую")
-        
+            
         if form.checkBox_4.isChecked():
             config['OPTIONS']['volume'] = '1'
             #функция громкости
@@ -194,25 +312,29 @@ def start():
 
         if form.checkBox_5.isChecked():
             config['OPTIONS']['sub_item'] = '1'
-            #функция субтитров айтем
+            if localsub == 'NotFound':
+                #функция
+                print('Не делаем')
+            else:
+                print('Делаем функцию')
         else:
             config['OPTIONS']['sub_item'] = ' '
             print("Не нормальизую")
-        
+            
         if form.checkBox_6.isChecked():
             config['OPTIONS']['sub_region'] = '1'
             #функция субтитров регион
         else:
             config['OPTIONS']['sub_region'] = ' '
             print("Не нормальизую")
-        
+            
         if form.checkBox_7.isChecked():
             config['OPTIONS']['render_audio'] = '1'
             #функция рендер аудио
         else:
             config['OPTIONS']['render_audio'] = ' '
             print("Не нормальизую")
-        
+            
         if form.checkBox_8.isChecked():
             config['OPTIONS']['render_video'] = '1'
             #функция рендер видео
@@ -226,6 +348,7 @@ def start():
 
 
     form.pushButton_5.clicked.connect(checkboxUI)
-    
     app.exec()
-    return folder
+
+
+start()
