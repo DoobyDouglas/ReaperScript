@@ -305,22 +305,6 @@ def start():
 
         #project = reapy.Project() чекнуть потом
 
-        # Добавляем сабы айтемы
-        time.sleep(1)
-        if form.checkBox_5.isChecked():
-            config['OPTIONS']['sub_item'] = '1'
-            if localsub == 'NotFound':
-                pass
-            else:
-                pyautogui.press('/')
-                time.sleep(1)
-                fix_path = localsub.replace('/', '\\')
-                pyautogui.typewrite(fix_path)
-                pyautogui.press('enter')
-
-        else:
-            config['OPTIONS']['sub_item'] = ' '
-
         # выделение аудио
         for file in flac_audio:
             RPR.InsertMedia(file, 1)
@@ -345,6 +329,23 @@ def start():
             raise SystemExit
         
         RPR.InsertMedia(videofolder, (1 << 9) | 0)
+
+        # Добавляем сабы айтемы
+        if form.checkBox_5.isChecked():
+            config['OPTIONS']['sub_item'] = '1'
+            if localsub == 'NotFound':
+                pass
+            else:
+                pyautogui.hotkey('ctrl', 't')
+                time.sleep(1)
+                pyautogui.press('/')
+                time.sleep(1)
+                fix_path = localsub.replace('/', '\\')
+                pyautogui.typewrite(fix_path)
+                pyautogui.press('enter')
+
+        else:
+            config['OPTIONS']['sub_item'] = ' '
 
         # Добавляем сабы регионы
         if form.checkBox_6.isChecked():
