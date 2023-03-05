@@ -101,6 +101,7 @@ def start():
         else:
             save_path_to_config('reaper_path', reaper_path)
             form.lineEdit_3.setText(reaper_path)
+        return reaper_path
         
     form.pushButton_3.clicked.connect(repear_exe)
 
@@ -117,6 +118,7 @@ def start():
             pass
         save_path_to_config('project_path', project_path)
         form.lineEdit_2.setText(project_path)
+        return project_path
         
     form.pushButton_2.clicked.connect(project_folder)
 
@@ -129,6 +131,7 @@ def start():
             pass
         save_path_to_config('fx_chains_folder', fx_chains_folder)
         form.lineEdit.setText(fx_chains_folder)
+        return fx_chains_folder
         
     form.pushButton.clicked.connect(fx_folder)
 
@@ -138,7 +141,6 @@ def start():
         global folder
         folder = QtWidgets.QFileDialog.getExistingDirectory(None, 'Рабочая папка', set_file)
         form.lineEdit_4.setText(folder)
-        return folder
     form.pushButton_4.clicked.connect(choice_folder)
 
     #Настройка сохранение рабочей папки
@@ -147,9 +149,6 @@ def start():
         save_path_to_config('folder_file', const_workfolder)
         
     form.pushButton_6.clicked.connect(setting_folder)
-
-
-    #чекбоксы
 
     #считывание и расстановка чекбоксов
     config = get_config()
@@ -165,6 +164,35 @@ def start():
 
     def checkboxUI(param: str):
         config = get_config()
+
+        #проверяем выбраны ли все рабочие папки
+        if bool(load_path_from_config('fx_chains_folder')) == False or bool(load_path_from_config('project_path')) == False or bool(load_path_from_config('reaper_path')) == False or bool(form.lineEdit_4.text()) == False:
+            QMessageBox.about(None, "Ошибка", "Вы не выбрали все рабочие папки")
+            return
+
+        #Проверяем на все аудио
+        if bool(glob.glob(os.path.join(folder, '*.flac*'))) == False and bool(glob.glob(os.path.join(folder, '*.flac'))) == False and bool(glob.glob(os.path.join(folder, '*.wav*'))) == False and bool(glob.glob(os.path.join(folder, '*.wav'))) == False:
+            QMessageBox.about(None, "Ошибка", "В папке нет ни одного аудио файла")
+            return
+        
+        #Получает List мп4 и мкв
+        count_mkv = glob.glob(os.path.join(folder, '*.mkv'))
+        count_mp4 = glob.glob(os.path.join(folder, '*.mp4'))
+
+        #Проверка на видеофайлы
+        if bool(count_mp4) == False and bool(count_mkv) == False: #если нет ни одного
+            QMessageBox.about(None, "Ошибка", "В папке нет видеофайлов")
+            return
+        elif len(count_mkv) > 1: #если мкв больше одного
+            QMessageBox.about(None, "Ошибка", "В папке несколько видео формата MKV")
+            return
+        elif len(count_mp4) > 1: #если мп4 больше одного
+            QMessageBox.about(None, "Ошибка", "В папке несколько видео формата MP4")
+            return
+        elif count_mkv and count_mp4: #если есть и мп4 и мкв
+            QMessageBox.about(None, "Ошибка", "В папке несколько видео")
+            return
+
         #Функция для проверки раскладки клавиатуры
         current_layout = pwkl.get_foreground_window_keyboard_layout()
         if current_layout != 67699721:
@@ -303,9 +331,38 @@ def start():
         #загрузка 
         subprocess.run([load_path_from_config('reaper_path'), load_path_from_config('project_path')])
 
+        #Проверка на папку
+        if form.checkBox_9.isChecked():
+            config['OPTIONS']['newfolder'] = '1'
+            if os.path.exists(f'{folder}/{s_number}') == False: #если нет внутри такой папки то создает её
+                os.mkdir(folder + "/" + s_number)
+                new_folder = f'{folder}/{s_number}'
+                new_porject_path = new_folder.replace('/', '\\') + '\\' + f'{s_number}'
+                time.sleep(1)
+                pyautogui.hotkey('ctrl', 'alt', 's')
+                time.sleep(1)
+                pyautogui.typewrite(new_porject_path)
+                pyautogui.press('enter')
+            #если есть, то просто сохраняет туда, либо в созданную
+            else:
+                new_folder = f'{folder}/{s_number}'
+                new_porject_path = new_folder.replace('/', '\\') + '\\' + f'{s_number}'
+                time.sleep(1)
+                pyautogui.hotkey('ctrl', 'alt', 's')
+                time.sleep(1)
+                pyautogui.typewrite(new_porject_path)
+                pyautogui.press('enter')
+        else:
+            config['OPTIONS']['newfolder'] = ' '
+            new_porject_path = folder.replace('/', '\\') + '\\' + f'{s_number}'
+            pyautogui.hotkey('ctrl', 'alt', 's')
+            time.sleep(1)
+            pyautogui.typewrite(new_porject_path)
+            pyautogui.press('enter')
+
         #project = reapy.Project() чекнуть потом
 
-        # выделение аудио
+        # Добавляем аудио и FX к ним
         for file in flac_audio:
             RPR.InsertMedia(file, 1)
             track = RPR.GetLastTouchedTrack()
@@ -327,7 +384,8 @@ def start():
         if not flac_audio and not wav_audio:
             reapy.print('В рабочей папке нет аудио, подходящего формата')
             raise SystemExit
-        
+
+        #Добавляем видео
         RPR.InsertMedia(videofolder, (1 << 9) | 0)
 
         # Добавляем сабы айтемы
@@ -343,7 +401,6 @@ def start():
                 fix_path = localsub.replace('/', '\\')
                 pyautogui.typewrite(fix_path)
                 pyautogui.press('enter')
-
         else:
             config['OPTIONS']['sub_item'] = ' '
 
@@ -362,13 +419,6 @@ def start():
             config['OPTIONS']['sub_region'] = ' '
         
         #запись чекбоксов
-        if form.checkBox_9.isChecked():
-            config['OPTIONS']['newfolder'] = '1'
-            if os.path.exists(f'{folder}/{s_number}') != True:
-                os.mkdir(folder + "/" + s_number)
-        else:
-            config['OPTIONS']['newfolder'] = ' '
-            print("Не создаю")
 
         if form.checkBox.isChecked():
             config['OPTIONS']['split'] = '1'
@@ -415,6 +465,7 @@ def start():
         with open('config.ini', 'w') as config_file:
             config.write(config_file)
 
+           
 
 
     form.pushButton_5.clicked.connect(checkboxUI)

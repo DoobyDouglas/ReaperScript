@@ -413,7 +413,7 @@ def main():
     flac_audio, wav_audio, mkv_video, mp4_video, subs = file_works(folder)
     reaper_run()
     project = reapy.Project()
-    #project_save(folder)
+    project_save(folder)
     audio_select(flac_audio, wav_audio)
     video_select(mkv_video, mp4_video)
     #import_subs(subs)
