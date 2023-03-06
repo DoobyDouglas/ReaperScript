@@ -460,8 +460,11 @@ def start():
         normalize_loudness = RPR.NamedCommandLookup(
             '_BR_NORMALIZE_LOUDNESS_ITEMS23'
         )
-
+        
+        #нормалайз
         if form.checkBox_3.isChecked() and form.checkBox_2.isChecked():
+            config['OPTIONS']['normalize'] = '1'
+            config['OPTIONS']['normalize_video'] = '1'
             RPR.SelectAllMediaItems(0, True)
             RPR.Main_OnCommand(normalize_loudness, 0)
         else:
