@@ -337,6 +337,19 @@
      <string>Создание подпапки для проекта</string>
     </property>
    </widget>
+   <widget class="QCheckBox" name="checkBox_10">
+    <property name="geometry">
+     <rect>
+      <x>310</x>
+      <y>230</y>
+      <width>201</width>
+      <height>17</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Добавить название релиза</string>
+    </property>
+   </widget>
   </widget>
  </widget>
  <resources/>

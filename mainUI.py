@@ -36,6 +36,7 @@ OPTIONS = [
         'render_audio',
         'render_video',
         'newfolder',
+        'changename'
     ]
 
 
@@ -197,7 +198,8 @@ def start():
         current_layout = pwkl.get_foreground_window_keyboard_layout()
         if current_layout != 67699721:
             pwkl.change_foreground_window_keyboard_layout(0x00000409)
-            QMessageBox.about(None, "Ошибка", "Неправильная раскладка. Если раскладнка не поменялась сама - поменяйте вручную")
+            QMessageBox.about(None, "Ошибка", "Неправильная раскладка. Если раскладнка не поменялась сама - поменяйте вручную. Нажмите на кнопку еще раз")
+            return
 
         #Функция для изменения имени видео, создание папки, вытаскивание субтитров, конвертация субтитров vtt
         s_number = os.path.basename(folder)
@@ -209,6 +211,10 @@ def start():
         if bool(videonamemp4) == True:
             videoname = os.rename(folder + "/" + videonamemp4, folder + "/" + s_number + fileExtMp4)
             videoname = ''.join(([_ for _ in os.listdir(folder) if _.endswith(fileExtMp4)]))
+            if form.checkBox_10.isChecked():
+                title = folder.split('/')[-2]
+                os.rename(folder + "/" + videoname, folder + '/' + title + '_' + videoname)
+                videoname = ''.join(([_ for _ in os.listdir(folder) if _.endswith(fileExtMp4)]))
             videofolder = f'{folder}/{videoname}'
 
             if glob.glob(os.path.join(folder, '*.srt')):
@@ -243,6 +249,10 @@ def start():
         else:
             videoname = os.rename(folder + "/" + videonamemkv, folder + "/" + s_number + fileExtMkv)
             videoname = ''.join(([_ for _ in os.listdir(folder) if _.endswith(fileExtMkv)]))
+            if form.checkBox_10.isChecked():
+                title = folder.split('/')[-2]
+                os.rename(folder + "/" + videoname, folder + '/' + title + '_' + videoname)
+                videoname = ''.join(([_ for _ in os.listdir(folder) if _.endswith(fileExtMkv)]))
             videofolder = f'{folder}/{videoname}'
 
             if glob.glob(os.path.join(folder, '*.srt')): #нахождение SRT
@@ -449,21 +459,24 @@ def start():
             '_BR_NORMALIZE_LOUDNESS_ITEMS23'
         )
 
-        if form.checkBox_2.isChecked():
-            config['OPTIONS']['normalize'] = '1'
+        if form.checkBox_3.isChecked() and form.checkBox_2.isChecked():
             RPR.SelectAllMediaItems(0, True)
-            RPR.SetMediaItemSelected(video_item, False)
             RPR.Main_OnCommand(normalize_loudness, 0)
         else:
-            config['OPTIONS']['normalize'] = ' '
+            if form.checkBox_2.isChecked():
+                config['OPTIONS']['normalize'] = '1'
+                RPR.SetMediaItemSelected(video_item, False)
+                RPR.Main_OnCommand(normalize_loudness, 0)
+            else:
+                config['OPTIONS']['normalize'] = ' '
 
-        if form.checkBox_3.isChecked():
-            config['OPTIONS']['normalize_video'] = '1'
-            RPR.SelectAllMediaItems(0, False)
-            RPR.SetMediaItemSelected(video_item, True)
-            RPR.Main_OnCommand(normalize_loudness, 0)
-        else:
-            config['OPTIONS']['normalize_video'] = ' '
+            if form.checkBox_3.isChecked():
+                config['OPTIONS']['normalize_video'] = '1'
+                RPR.SelectAllMediaItems(0, False)
+                RPR.SetMediaItemSelected(video_item, True)
+                RPR.Main_OnCommand(normalize_loudness, 0)
+            else:
+                config['OPTIONS']['normalize_video'] = ' '
 
 
         if form.checkBox_4.isChecked():
