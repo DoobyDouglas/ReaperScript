@@ -10,6 +10,8 @@ __pycache__/
 .Python
 config.ini
 nucheck.py
+nucheck copy.py
+some_files/
 ffmpeg.exe
 script.spec
 build/
