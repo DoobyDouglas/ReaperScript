@@ -5,6 +5,7 @@ import configparser
 from pathlib import Path
 import asstosrt
 import os
+import keyboard
 import subprocess
 import time
 import os
@@ -199,7 +200,7 @@ def start():
         if current_layout != 67699721:
             pwkl.change_foreground_window_keyboard_layout(0x00000409)
             QMessageBox.about(None, "Ошибка", "Неправильная раскладка. Если раскладнка не поменялась сама - поменяйте вручную. Нажмите на кнопку еще раз")
-            return
+            
 
         #Функция для изменения имени видео, создание папки, вытаскивание субтитров, конвертация субтитров vtt
         s_number = os.path.basename(folder)
@@ -354,26 +355,27 @@ def start():
                 new_folder = f'{folder}/{s_number}'
                 new_porject_path = new_folder.replace('/', '\\') + '\\' + f'{s_number}'
                 time.sleep(1)
-                pyautogui.hotkey('ctrl', 'alt', 's')
+                keyboard.send('ctrl+alt+s')
                 time.sleep(1)
-                pyautogui.typewrite(new_porject_path)
-                pyautogui.press('enter')
+                keyboard.write(new_porject_path)
+                keyboard.send('enter')
             #если есть, то просто сохраняет туда, либо в созданную
             else:
                 new_folder = f'{folder}/{s_number}'
                 new_porject_path = new_folder.replace('/', '\\') + '\\' + f'{s_number}'
                 time.sleep(1)
-                pyautogui.hotkey('ctrl', 'alt', 's')
+                keyboard.send('ctrl+alt+s')
                 time.sleep(1)
-                pyautogui.typewrite(new_porject_path)
-                pyautogui.press('enter')
+                keyboard.write(new_porject_path)
+                keyboard.send('enter')
         else:
             config['OPTIONS']['newfolder'] = ' '
             new_porject_path = folder.replace('/', '\\') + '\\' + f'{s_number}'
-            pyautogui.hotkey('ctrl', 'alt', 's')
             time.sleep(1)
-            pyautogui.typewrite(new_porject_path)
-            pyautogui.press('enter')
+            keyboard.send('ctrl+alt+s')
+            time.sleep(1)
+            keyboard.write(new_porject_path)
+            keyboard.send('enter')
 
         #project = reapy.Project() чекнуть потом
 
@@ -409,13 +411,13 @@ def start():
             if localsub == 'NotFound':
                 pass
             else:
-                pyautogui.hotkey('ctrl', 't')
+                keyboard.send('ctrl+t')
                 time.sleep(1)
-                pyautogui.press('/')
+                keyboard.send('/')
                 time.sleep(1)
                 fix_path = localsub.replace('/', '\\')
-                pyautogui.typewrite(fix_path)
-                pyautogui.press('enter')
+                keyboard.write(fix_path)
+                keyboard.send('enter')
         else:
             config['OPTIONS']['sub_item'] = ' '
 
@@ -425,11 +427,11 @@ def start():
             if localsub == 'NotFound':
                 pass
             else:
-                pyautogui.press('i')
+                keyboard.send('i')
                 time.sleep(1)
                 fix_path = localsub.replace('/', '\\')
-                pyautogui.typewrite(fix_path)
-                pyautogui.press('enter')
+                keyboard.write(fix_path)
+                keyboard.send('enter')
         else:
             config['OPTIONS']['sub_region'] = ' '
 
@@ -450,7 +452,7 @@ def start():
             RPR.SetMediaItemSelected(video_item, False)
             RPR.Main_OnCommand(40760, 0)
             time.sleep(split_sleep)
-            pyautogui.press('enter')
+            keyboard.send('enter')
             time.sleep(1)
         else:
             config['OPTIONS']['split'] = ' '
