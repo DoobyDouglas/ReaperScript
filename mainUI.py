@@ -300,7 +300,7 @@ def start():
         else: 
             localsub = 'NotFound'
         #localsub - путь к файлу сабов, videofolder - путь к видеофайлу 
-        
+
         #нахождение неправильных форматов и переименовка
         if glob.glob(os.path.join(folder, '*.flac*')):
             flac_audio = glob.glob(os.path.join(folder, '*.flac*'))
@@ -387,8 +387,13 @@ def start():
                 if name in file.split('\\')[-1].lower():
                     RPR.TrackFX_AddByName(track, fx_dict[name], 0, -1)
                     RPR.GetSetMediaTrackInfo_String(
-                        track, 'P_NAME', name.upper(), True
-                    )
+                        track, 'P_NAME', name.upper(), True)
+                    if form.checkBox_4.isChecked():
+                        config['OPTIONS']['volume'] = '1'
+                        item = RPR.GetTrackMediaItem(track, 0)
+                        RPR.SetMediaItemInfo_Value(item, 'D_VOL', 1.5)
+                    else:
+                        config['OPTIONS']['volume'] = ' '
         for file in wav_audio:
             RPR.InsertMedia(file, 0)
             track = RPR.GetLastTouchedTrack()
@@ -396,11 +401,13 @@ def start():
                 if name in file.split('\\')[-1].lower():
                     RPR.TrackFX_AddByName(track, fx_dict[name], 0, -1)
                     RPR.GetSetMediaTrackInfo_String(
-                        track, 'P_NAME', name.upper(), True
-                    )
-        if not flac_audio and not wav_audio:
-            reapy.print('В рабочей папке нет аудио, подходящего формата')
-            raise SystemExit
+                        track, 'P_NAME', name.upper(), True)
+                    if form.checkBox_4.isChecked():
+                        config['OPTIONS']['volume'] = '1'
+                        item = RPR.GetTrackMediaItem(track, 0)
+                        RPR.SetMediaItemInfo_Value(item, 'D_VOL', 1.5)
+                    else:
+                        config['OPTIONS']['volume'] = ' '
 
         #Добавляем видео
         RPR.InsertMedia(videofolder, (1 << 9) | 0)
@@ -413,7 +420,7 @@ def start():
             else:
                 keyboard.send('ctrl+t')
                 time.sleep(1)
-                keyboard.send('/')
+                keyboard.send('ctrl+0')
                 time.sleep(1)
                 fix_path = localsub.replace('/', '\\')
                 keyboard.write(fix_path)
@@ -484,28 +491,48 @@ def start():
             else:
                 config['OPTIONS']['normalize_video'] = ' '
 
-
-        if form.checkBox_4.isChecked():
-            config['OPTIONS']['volume'] = '1'
-            # функция громкости
-        else:
-            config['OPTIONS']['volume'] = ' '
-            print("Не нормальизую")
-
         if form.checkBox_7.isChecked():
             config['OPTIONS']['render_audio'] = '1'
-            # функция рендер аудио
+            RPR.Main_OnCommand(40015, 0)
+            time.sleep(1)
+            keyboard.write(s_number)
+            time.sleep(1)
+            for i in range(34):
+                keyboard.press('tab')
+            keyboard.write(new_porject_path)
+            keyboard.press('enter')
+            time.sleep(120)
         else:
             config['OPTIONS']['render_audio'] = ' '
-            print("Не нормальизую")
 
         if form.checkBox_8.isChecked():
             config['OPTIONS']['render_video'] = '1'
-            # функция рендер видео
+            if glob.glob(os.path.join(new_folder, '*.flac')):
+                print('Я НАЧАЛ РЕНДЕРИТЬ ВИДОСИК')
+                command = f'ffmpeg -i {new_folder}/{s_number}.flac -ab 256k {new_folder}/coder{s_number}.aac'
+                subprocess.call(command, shell=True)
+                command = (
+                f'ffmpeg -i {videofolder} -i {new_folder}/coder{s_number}.aac -c copy '
+                f'-map 0:v:0 -map 1:a:0 {folder}/{videoname[0]}_DUB.mkv'
+                )
+                subprocess.call(command, shell=True)
+            elif glob.glob(os.path.join(new_folder, '*.wav')):
+                print('Я НАЧАЛ РЕНДЕРИТЬ ВИДОСИК')
+                command = f'ffmpeg -i {new_folder}/{s_number}.wav -ab 256k {new_folder}/coder{s_number}.aac'
+                subprocess.call(command, shell=True)
+                command = (
+                f'ffmpeg -i {videofolder} -i {new_folder}/coder{s_number}.aac -c copy '
+                f'-map 0:v:0 -map 1:a:0 {folder}/{videoname[0]}_DUB.mkv'
+                )
+                subprocess.call(command, shell=True)
+            else: 
+                QMessageBox.about(None, "Ошибка", "В рабочей папки нет аудио файла FLAC или WAV")
+
         else:
             config['OPTIONS']['render_video'] = ' '
-            print("Не нормальизую")
-
+            print('НЕ НАЧАЛ(((')
+            
+        print("Я ЗАКОНЧИЛ")
         with open('config.ini', 'w') as config_file:
             config.write(config_file)
 
