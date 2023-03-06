@@ -6,20 +6,20 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>620</width>
-    <height>582</height>
+    <width>630</width>
+    <height>714</height>
    </rect>
   </property>
   <property name="minimumSize">
    <size>
-    <width>620</width>
-    <height>582</height>
+    <width>630</width>
+    <height>714</height>
    </size>
   </property>
   <property name="maximumSize">
    <size>
-    <width>800</width>
-    <height>800</height>
+    <width>630</width>
+    <height>714</height>
    </size>
   </property>
   <property name="font">
@@ -31,70 +31,40 @@
   <property name="windowTitle">
    <string>Timming</string>
   </property>
+  <property name="windowIcon">
+   <iconset resource="resursec.qrc">
+    <normaloff>:/newPrefix/programing.ico</normaloff>:/newPrefix/programing.ico</iconset>
+  </property>
   <property name="styleSheet">
-   <string notr="true">QCheckBox {
-	font-size:13px;
-	color: rgb(255, 255, 255)
-}
-QLineEdit {
-	border:1px solid white;
-	color:#white;
-}
-QPushButton{	
-	border:solid 2px #fff;
-    background: transparent;
-    color: #fff !important;}
-QPushButton:hover{
-	border:solid 2px #fff;
-    background: #fff;
-    color: #1f1f1f !important;
-}</string>
+   <string notr="true"/>
   </property>
   <widget class="QWidget" name="centralwidget">
    <property name="styleSheet">
-    <string notr="true">background-color:rgb(138, 138, 138)</string>
+    <string notr="true"/>
    </property>
    <widget class="QPushButton" name="pushButton_5">
     <property name="geometry">
      <rect>
       <x>460</x>
-      <y>510</y>
+      <y>630</y>
       <width>141</width>
       <height>51</height>
      </rect>
     </property>
     <property name="styleSheet">
      <string notr="true">QPushButton {
-  appearance: none;
   background-color: rgb(42, 42, 42);
   border-radius: 15px;
-  box-sizing: border-box;
   color: #FFFFFF;
-  cursor: pointer;
-  display: inline-block;
-  font-family: Roobert,-apple-system,BlinkMacSystemFont,&quot;Segoe UI&quot;,Helvetica,Arial,sans-serif,&quot;Apple Color Emoji&quot;,&quot;Segoe UI Emoji&quot;,&quot;Segoe UI Symbol&quot;;
   font-size: 14px;
   line-height: normal;
   margin: 0;
-  outline: none;
-  padding: 16px 24px;
   text-align: center;
-  text-decoration: none;
-  transition: all 300ms cubic-bezier(.23, 1, 0.32, 1);
-  user-select: none;
-  -webkit-user-select: none;
-  touch-action: manipulation;
-  will-change: transform;
 }
 
 QPushButton:hover {
 	background:rgb(71, 71, 71);
 	border:0px;
-}
-
-QPushButton:pressed {
-  box-shadow: none;
-  transform: translateY(0);
 }</string>
     </property>
     <property name="text">
@@ -104,41 +74,26 @@ QPushButton:pressed {
    <widget class="QPushButton" name="pushButton_6">
     <property name="geometry">
      <rect>
-      <x>20</x>
-      <y>510</y>
+      <x>10</x>
+      <y>630</y>
       <width>141</width>
       <height>51</height>
      </rect>
     </property>
     <property name="styleSheet">
      <string notr="true">QPushButton {
-  appearance: none;
   background-color: rgb(42, 42, 42);
   border-radius: 15px;
-  box-sizing: border-box;
   color: #FFFFFF;
-  display: inline-block;
   font-size: 14px;
   line-height: normal;
   margin: 0;
-  outline: none;
-  padding: 16px 24px;
   text-align: center;
-  text-decoration: none;
-  transition: all 300ms cubic-bezier(.23, 1, 0.32, 1);
-  user-select: none;
-  touch-action: manipulation;
-  will-change: transform;
 }
 
 QPushButton:hover {
 	background:rgb(71, 71, 71);
 	border:0px;
-}
-
-QPushButton:pressed {
-  box-shadow: none;
-  transform: translateY(0);
 }</string>
     </property>
     <property name="text">
@@ -154,8 +109,15 @@ QPushButton:pressed {
       <height>161</height>
      </rect>
     </property>
+    <property name="font">
+     <font>
+      <pointsize>11</pointsize>
+     </font>
+    </property>
     <property name="styleSheet">
-     <string notr="true">background-color: rgb(54, 54, 54);</string>
+     <string notr="true">QFrame {background: rgba(0, 0, 0, 100);}
+
+</string>
     </property>
     <property name="frameShape">
      <enum>QFrame::StyledPanel</enum>
@@ -166,11 +128,20 @@ QPushButton:pressed {
     <widget class="QCheckBox" name="checkBox">
      <property name="geometry">
       <rect>
-       <x>40</x>
-       <y>30</y>
-       <width>70</width>
-       <height>17</height>
+       <x>10</x>
+       <y>10</y>
+       <width>71</width>
+       <height>21</height>
       </rect>
+     </property>
+     <property name="font">
+      <font>
+       <pointsize>11</pointsize>
+      </font>
+     </property>
+     <property name="styleSheet">
+      <string notr="true">background: rgba(0, 0, 0, 0);
+color: white</string>
      </property>
      <property name="text">
       <string>Сплит</string>
@@ -182,11 +153,20 @@ QPushButton:pressed {
     <widget class="QCheckBox" name="checkBox_10">
      <property name="geometry">
       <rect>
-       <x>40</x>
-       <y>110</y>
-       <width>201</width>
-       <height>17</height>
+       <x>10</x>
+       <y>130</y>
+       <width>221</width>
+       <height>21</height>
       </rect>
+     </property>
+     <property name="font">
+      <font>
+       <pointsize>11</pointsize>
+      </font>
+     </property>
+     <property name="styleSheet">
+      <string notr="true">background: rgba(0, 0, 0, 0);
+color: white</string>
      </property>
      <property name="text">
       <string>Добавить название релиза</string>
@@ -195,11 +175,20 @@ QPushButton:pressed {
     <widget class="QCheckBox" name="checkBox_2">
      <property name="geometry">
       <rect>
-       <x>40</x>
-       <y>50</y>
-       <width>151</width>
-       <height>17</height>
+       <x>10</x>
+       <y>40</y>
+       <width>171</width>
+       <height>21</height>
       </rect>
+     </property>
+     <property name="font">
+      <font>
+       <pointsize>11</pointsize>
+      </font>
+     </property>
+     <property name="styleSheet">
+      <string notr="true">background: rgba(0, 0, 0, 0);
+color: white</string>
      </property>
      <property name="text">
       <string>Нормализация дорог</string>
@@ -208,11 +197,20 @@ QPushButton:pressed {
     <widget class="QCheckBox" name="checkBox_4">
      <property name="geometry">
       <rect>
-       <x>40</x>
-       <y>90</y>
-       <width>231</width>
-       <height>17</height>
+       <x>10</x>
+       <y>100</y>
+       <width>271</width>
+       <height>21</height>
       </rect>
+     </property>
+     <property name="font">
+      <font>
+       <pointsize>11</pointsize>
+      </font>
+     </property>
+     <property name="styleSheet">
+      <string notr="true">background: rgba(0, 0, 0, 0);
+color: white</string>
      </property>
      <property name="text">
       <string>Поднятие громкости дабберов +1.5</string>
@@ -221,11 +219,20 @@ QPushButton:pressed {
     <widget class="QCheckBox" name="checkBox_3">
      <property name="geometry">
       <rect>
-       <x>40</x>
+       <x>10</x>
        <y>70</y>
        <width>171</width>
-       <height>17</height>
+       <height>21</height>
       </rect>
+     </property>
+     <property name="font">
+      <font>
+       <pointsize>11</pointsize>
+      </font>
+     </property>
+     <property name="styleSheet">
+      <string notr="true">background: rgba(0, 0, 0, 0);
+color: white</string>
      </property>
      <property name="text">
       <string>Нормализация видео</string>
@@ -235,10 +242,19 @@ QPushButton:pressed {
      <property name="geometry">
       <rect>
        <x>290</x>
-       <y>110</y>
-       <width>201</width>
-       <height>17</height>
+       <y>130</y>
+       <width>251</width>
+       <height>21</height>
       </rect>
+     </property>
+     <property name="font">
+      <font>
+       <pointsize>11</pointsize>
+      </font>
+     </property>
+     <property name="styleSheet">
+      <string notr="true">background: rgba(0, 0, 0, 0);
+color: white</string>
      </property>
      <property name="text">
       <string>Создание подпапки для проекта</string>
@@ -250,8 +266,17 @@ QPushButton:pressed {
        <x>290</x>
        <y>70</y>
        <width>171</width>
-       <height>17</height>
+       <height>21</height>
       </rect>
+     </property>
+     <property name="font">
+      <font>
+       <pointsize>11</pointsize>
+      </font>
+     </property>
+     <property name="styleSheet">
+      <string notr="true">background: rgba(0, 0, 0, 0);
+color: white</string>
      </property>
      <property name="text">
       <string>Рендер аудио (сразу)</string>
@@ -261,10 +286,19 @@ QPushButton:pressed {
      <property name="geometry">
       <rect>
        <x>290</x>
-       <y>90</y>
-       <width>161</width>
-       <height>17</height>
+       <y>100</y>
+       <width>171</width>
+       <height>21</height>
       </rect>
+     </property>
+     <property name="font">
+      <font>
+       <pointsize>11</pointsize>
+      </font>
+     </property>
+     <property name="styleSheet">
+      <string notr="true">background: rgba(0, 0, 0, 0);
+color: white</string>
      </property>
      <property name="text">
       <string>Рендер видео (сразу)</string>
@@ -274,10 +308,19 @@ QPushButton:pressed {
      <property name="geometry">
       <rect>
        <x>290</x>
-       <y>30</y>
-       <width>191</width>
-       <height>17</height>
+       <y>10</y>
+       <width>221</width>
+       <height>21</height>
       </rect>
+     </property>
+     <property name="font">
+      <font>
+       <pointsize>11</pointsize>
+      </font>
+     </property>
+     <property name="styleSheet">
+      <string notr="true">background: rgba(0, 0, 0, 0);
+color: white</string>
      </property>
      <property name="text">
       <string>Добавление субтитров Item</string>
@@ -287,10 +330,19 @@ QPushButton:pressed {
      <property name="geometry">
       <rect>
        <x>290</x>
-       <y>50</y>
-       <width>211</width>
-       <height>17</height>
+       <y>40</y>
+       <width>241</width>
+       <height>21</height>
       </rect>
+     </property>
+     <property name="font">
+      <font>
+       <pointsize>11</pointsize>
+      </font>
+     </property>
+     <property name="styleSheet">
+      <string notr="true">background: rgba(0, 0, 0, 0);
+color: white</string>
      </property>
      <property name="text">
       <string>Добавление субтитров Region</string>
@@ -300,14 +352,16 @@ QPushButton:pressed {
    <widget class="QFrame" name="frame_2">
     <property name="geometry">
      <rect>
-      <x>10</x>
-      <y>400</y>
-      <width>141</width>
-      <height>91</height>
+      <x>180</x>
+      <y>630</y>
+      <width>261</width>
+      <height>51</height>
      </rect>
     </property>
     <property name="styleSheet">
-     <string notr="true"/>
+     <string notr="true">color:white;
+background: rgba(0, 0, 0, 100);
+border-radius: 20px;</string>
     </property>
     <property name="frameShape">
      <enum>QFrame::StyledPanel</enum>
@@ -318,10 +372,10 @@ QPushButton:pressed {
     <widget class="QLabel" name="label_7">
      <property name="geometry">
       <rect>
-       <x>90</x>
-       <y>30</y>
-       <width>41</width>
-       <height>20</height>
+       <x>190</x>
+       <y>10</y>
+       <width>61</width>
+       <height>31</height>
       </rect>
      </property>
      <property name="font">
@@ -330,6 +384,10 @@ QPushButton:pressed {
        <weight>75</weight>
        <bold>true</bold>
       </font>
+     </property>
+     <property name="styleSheet">
+      <string notr="true">background-color:black;
+padding:5px</string>
      </property>
      <property name="text">
       <string>KOT3</string>
@@ -339,9 +397,9 @@ QPushButton:pressed {
      <property name="geometry">
       <rect>
        <x>10</x>
-       <y>60</y>
-       <width>111</width>
-       <height>21</height>
+       <y>10</y>
+       <width>121</width>
+       <height>31</height>
       </rect>
      </property>
      <property name="font">
@@ -351,6 +409,10 @@ QPushButton:pressed {
        <bold>true</bold>
       </font>
      </property>
+     <property name="styleSheet">
+      <string notr="true">background-color:black;
+padding:5px</string>
+     </property>
      <property name="text">
       <string>Dooby Duglas</string>
      </property>
@@ -358,14 +420,14 @@ QPushButton:pressed {
     <widget class="QLabel" name="label_5">
      <property name="geometry">
       <rect>
-       <x>10</x>
-       <y>10</y>
-       <width>47</width>
-       <height>13</height>
+       <x>150</x>
+       <y>20</y>
+       <width>21</width>
+       <height>16</height>
       </rect>
      </property>
      <property name="text">
-      <string>Creater</string>
+      <string>and</string>
      </property>
     </widget>
    </widget>
@@ -375,11 +437,11 @@ QPushButton:pressed {
       <x>20</x>
       <y>30</y>
       <width>581</width>
-      <height>151</height>
+      <height>141</height>
      </rect>
     </property>
     <property name="styleSheet">
-     <string notr="true">background-color: rgb(81, 81, 81);
+     <string notr="true">background: rgba(0, 0, 0, 100);
 color:white;</string>
     </property>
     <property name="frameShape">
@@ -469,6 +531,11 @@ color:white;</string>
        <height>20</height>
       </rect>
      </property>
+     <property name="styleSheet">
+      <string notr="true">color:white;
+border:1px solid white;
+background: rgba(0, 0, 0, 200)</string>
+     </property>
      <property name="readOnly">
       <bool>true</bool>
      </property>
@@ -482,6 +549,11 @@ color:white;</string>
        <height>20</height>
       </rect>
      </property>
+     <property name="styleSheet">
+      <string notr="true">color:white;
+border:1px solid white;
+background: rgba(0, 0, 0, 200)</string>
+     </property>
      <property name="readOnly">
       <bool>true</bool>
      </property>
@@ -494,6 +566,11 @@ color:white;</string>
        <width>181</width>
        <height>21</height>
       </rect>
+     </property>
+     <property name="styleSheet">
+      <string notr="true">color:white;
+border:1px solid white;
+background: rgba(0, 0, 0, 200)</string>
      </property>
      <property name="readOnly">
       <bool>true</bool>
@@ -572,6 +649,11 @@ QPushButton:hover{
        <height>20</height>
       </rect>
      </property>
+     <property name="styleSheet">
+      <string notr="true">color:white;
+border:1px solid white;
+background: rgba(0, 0, 0, 200)</string>
+     </property>
      <property name="text">
       <string/>
      </property>
@@ -580,8 +662,137 @@ QPushButton:hover{
      </property>
     </widget>
    </widget>
+   <widget class="QFrame" name="frame_4">
+    <property name="geometry">
+     <rect>
+      <x>300</x>
+      <y>330</y>
+      <width>301</width>
+      <height>111</height>
+     </rect>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">background: rgba(0, 0, 0, 100);
+border-radius: 0px 0px 20px 20px</string>
+    </property>
+    <property name="frameShape">
+     <enum>QFrame::StyledPanel</enum>
+    </property>
+    <property name="frameShadow">
+     <enum>QFrame::Raised</enum>
+    </property>
+    <widget class="QLineEdit" name="lineEdit_5">
+     <property name="geometry">
+      <rect>
+       <x>10</x>
+       <y>10</y>
+       <width>281</width>
+       <height>20</height>
+      </rect>
+     </property>
+     <property name="tabletTracking">
+      <bool>false</bool>
+     </property>
+     <property name="styleSheet">
+      <string notr="true">color:white;
+border:1px solid white;
+background: rgba(0, 0, 0, 200)</string>
+     </property>
+     <property name="inputMask">
+      <string notr="true"/>
+     </property>
+     <property name="dragEnabled">
+      <bool>false</bool>
+     </property>
+     <property name="placeholderText">
+      <string>Задержка при открытии (def = 1s)</string>
+     </property>
+    </widget>
+    <widget class="QLineEdit" name="lineEdit_6">
+     <property name="geometry">
+      <rect>
+       <x>10</x>
+       <y>40</y>
+       <width>281</width>
+       <height>20</height>
+      </rect>
+     </property>
+     <property name="tabletTracking">
+      <bool>false</bool>
+     </property>
+     <property name="styleSheet">
+      <string notr="true">color:white;
+border:1px solid white;
+background: rgba(0, 0, 0, 200)</string>
+     </property>
+     <property name="inputMask">
+      <string notr="true"/>
+     </property>
+     <property name="dragEnabled">
+      <bool>false</bool>
+     </property>
+     <property name="placeholderText">
+      <string>Задержка при сохранении (def = 1s)</string>
+     </property>
+    </widget>
+    <widget class="QLineEdit" name="lineEdit_7">
+     <property name="geometry">
+      <rect>
+       <x>10</x>
+       <y>70</y>
+       <width>281</width>
+       <height>20</height>
+      </rect>
+     </property>
+     <property name="tabletTracking">
+      <bool>false</bool>
+     </property>
+     <property name="styleSheet">
+      <string notr="true">color:white;
+border:1px solid white;
+background: rgba(0, 0, 0, 200)</string>
+     </property>
+     <property name="inputMask">
+      <string notr="true"/>
+     </property>
+     <property name="dragEnabled">
+      <bool>false</bool>
+     </property>
+     <property name="placeholderText">
+      <string>Задержка при добавлении FX (def = 1s)</string>
+     </property>
+    </widget>
+   </widget>
+   <widget class="QLabel" name="label_8">
+    <property name="geometry">
+     <rect>
+      <x>-1230</x>
+      <y>-10</y>
+      <width>1881</width>
+      <height>731</height>
+     </rect>
+    </property>
+    <property name="styleSheet">
+     <string notr="true"/>
+    </property>
+    <property name="text">
+     <string/>
+    </property>
+    <property name="pixmap">
+     <pixmap resource="resursec.qrc">:/newPrefix/back1.jpg</pixmap>
+    </property>
+   </widget>
+   <zorder>label_8</zorder>
+   <zorder>pushButton_5</zorder>
+   <zorder>pushButton_6</zorder>
+   <zorder>frame_2</zorder>
+   <zorder>frame_3</zorder>
+   <zorder>frame_4</zorder>
+   <zorder>frame</zorder>
   </widget>
  </widget>
- <resources/>
+ <resources>
+  <include location="resursec.qrc"/>
+ </resources>
  <connections/>
 </ui>

@@ -78,6 +78,7 @@ def load_path_from_config(name):
 
 
 def start():
+
     Form, Window = uic.loadUiType("MainWindow.ui")
 
     app = QApplication([])
@@ -89,6 +90,16 @@ def start():
     form.lineEdit_3.setText(load_path_from_config('reaper_path'))   
     form.lineEdit_2.setText(load_path_from_config('project_path'))  
     form.lineEdit.setText(load_path_from_config('fx_chains_folder'))    
+    
+    #доделать проверку о включенном рипере + сделать предложение запустить рипер
+    #if load_path_from_config('reaper_path'):
+        #openreaper = subprocess.Popen(load_path_from_config('reaper_path'))
+        #if openreaper.poll() == None:
+            #QMessageBox.about(None, "Ошибка", "Программа открыта!!!")
+            #return
+
+    
+    
     #рипер ехе
                     
     def repear_exe():
@@ -167,6 +178,41 @@ def start():
     def checkboxUI(param: str):
         config = get_config()
 
+        #если пользователь написал свои числа в задержу(для регулировки работы приложения), то принимаются его значения в sleep, если нет, то наши стандарт 1с
+        if form.lineEdit_5.text():
+            if form.lineEdit_5.text().isdigit():
+                if int(form.lineEdit_5.text()) < 11 :
+                    runtime = form.lineEdit_5.text() 
+                else:
+                    QMessageBox.about(None, "Ошибка", "Задержка при открытии слишком большая(max. 10)")
+                    return       
+            else:
+                QMessageBox.about(None, "Ошибка", "В задержку можно ввести только число от 0 до 10")
+                return
+        else:
+            runtime = 1
+
+        if form.lineEdit_6.text():
+            if form.lineEdit_6.text().isdigit():
+                if int(form.lineEdit_6.text()) < 11 :
+                    savetime = form.lineEdit_6.text() 
+                else:
+                    QMessageBox.about(None, "Ошибка", "Задержка при сохранении слишком большая(max. 10)")
+                    return       
+            else:
+                QMessageBox.about(None, "Ошибка", "В задержку можно ввести только число от 0 до 10")
+                return
+        else:
+            savetime = 1
+
+        #addfxtime = form.lineEdit_7.text()
+
+        s_number = os.path.basename(folder)
+        fileExtMp4 = r".mp4"
+        fileExtMkv = r".mkv"
+        videonamemp4 = ''.join(([_ for _ in os.listdir(folder) if _.endswith(fileExtMp4)]))
+        videonamemkv = ''.join(([_ for _ in os.listdir(folder) if _.endswith(fileExtMkv)]))
+
         #проверяем выбраны ли все рабочие папки
         if bool(load_path_from_config('fx_chains_folder')) == False or bool(load_path_from_config('project_path')) == False or bool(load_path_from_config('reaper_path')) == False or bool(form.lineEdit_4.text()) == False:
             QMessageBox.about(None, "Ошибка", "Вы не выбрали все рабочие папки")
@@ -203,14 +249,13 @@ def start():
             
 
         #Функция для изменения имени видео, создание папки, вытаскивание субтитров, конвертация субтитров vtt
-        s_number = os.path.basename(folder)
-        fileExtMp4 = r".mp4"
-        fileExtMkv = r".mkv"
-        videonamemp4 = ''.join(([_ for _ in os.listdir(folder) if _.endswith(fileExtMp4)]))
-        videonamemkv = ''.join(([_ for _ in os.listdir(folder) if _.endswith(fileExtMkv)]))
 
         if bool(videonamemp4) == True:
-            videoname = os.rename(folder + "/" + videonamemp4, folder + "/" + s_number + fileExtMp4)
+            try:
+                videoname = os.rename(folder + "/" + videonamemp4, folder + "/" + s_number + fileExtMp4)
+            except OSError:
+                QMessageBox.about(None, "Ошибка", "Видеофайл используется")
+                return
             videoname = ''.join(([_ for _ in os.listdir(folder) if _.endswith(fileExtMp4)]))
             if form.checkBox_10.isChecked():
                 title = folder.split('/')[-2]
@@ -248,7 +293,11 @@ def start():
                     command = f'ffmpeg -i {folder}/{videoname} {folder}/{s_number}.srt'
                     subprocess.call(command, shell=True)
         else:
-            videoname = os.rename(folder + "/" + videonamemkv, folder + "/" + s_number + fileExtMkv)
+            try:
+                videoname = os.rename(folder + "/" + videonamemkv, folder + "/" + s_number + fileExtMkv)
+            except OSError:
+                QMessageBox.about(None, "Ошибка", "Видеофайл используется")
+                return
             videoname = ''.join(([_ for _ in os.listdir(folder) if _.endswith(fileExtMkv)]))
             if form.checkBox_10.isChecked():
                 title = folder.split('/')[-2]
@@ -310,7 +359,11 @@ def start():
                         filename = os.path.splitext(file)[0]
                         ext = os.path.splitext(file)[-1]
                         if ext != '.flac':
-                            os.rename(file, filename + '.flac')
+                            try:
+                                os.rename(file, filename + '.flac')
+                            except OSError:
+                                QMessageBox.about(None, "Ошибка", "Аудиофайл используется")
+                                return
                     else:
                         pass
         # находить нормальные файла
@@ -326,7 +379,11 @@ def start():
                         filename = os.path.splitext(file)[0]
                         ext = os.path.splitext(file)[-1]
                         if ext != '.wav':
-                            os.rename(file, filename + '.wav')
+                            try:
+                                os.rename(file, filename + '.wav')
+                            except OSError:
+                                QMessageBox.about(None, "Ошибка", "Аудиофайл используется")
+                                return
                     else:
                         pass
         # находить нормальные файла
@@ -345,35 +402,36 @@ def start():
 
         # загрузка
         subprocess.run([load_path_from_config('reaper_path'), load_path_from_config('project_path')])
-        time.sleep(1)
+        time.sleep(runtime)
 
         # Проверка на папку
         if form.checkBox_9.isChecked():
             config['OPTIONS']['newfolder'] = '1'
-            if os.path.exists(f'{folder}/{s_number}') == False:  # если нет внутри такой папки то создает её
+            if os.path.exists(f'{folder}/{s_number}') == False:  # если нет внутри такой папки то создает её и сохраняет
                 os.mkdir(folder + "/" + s_number)
                 new_folder = f'{folder}/{s_number}'
                 new_porject_path = new_folder.replace('/', '\\') + '\\' + f'{s_number}'
-                time.sleep(1)
+                time.sleep(savetime)
                 keyboard.send('ctrl+alt+s')
-                time.sleep(1)
+                time.sleep(savetime)
                 keyboard.write(new_porject_path)
                 keyboard.send('enter')
-            #если есть, то просто сохраняет туда, либо в созданную
+
+            #если есть, то просто сохраняет туда
             else:
                 new_folder = f'{folder}/{s_number}'
                 new_porject_path = new_folder.replace('/', '\\') + '\\' + f'{s_number}'
-                time.sleep(1)
+                time.sleep(savetime)
                 keyboard.send('ctrl+alt+s')
-                time.sleep(1)
+                time.sleep(savetime)
                 keyboard.write(new_porject_path)
                 keyboard.send('enter')
         else:
             config['OPTIONS']['newfolder'] = ' '
             new_porject_path = folder.replace('/', '\\') + '\\' + f'{s_number}'
-            time.sleep(1)
+            time.sleep(savetime)
             keyboard.send('ctrl+alt+s')
-            time.sleep(1)
+            time.sleep(savetime)
             keyboard.write(new_porject_path)
             keyboard.send('enter')
 
@@ -386,6 +444,7 @@ def start():
             for name in fx_dict:
                 if name in file.split('\\')[-1].lower():
                     RPR.TrackFX_AddByName(track, fx_dict[name], 0, -1)
+                    #я бы сюда поставил слип, потому что бывает тяжелые пресеты для дабберов
                     RPR.GetSetMediaTrackInfo_String(
                         track, 'P_NAME', name.upper(), True)
                     if form.checkBox_4.isChecked():
@@ -400,6 +459,7 @@ def start():
             for name in fx_dict:
                 if name in file.split('\\')[-1].lower():
                     RPR.TrackFX_AddByName(track, fx_dict[name], 0, -1)
+                    #я бы сюда поставил слип, потому что бывает тяжелые пресеты для дабберов
                     RPR.GetSetMediaTrackInfo_String(
                         track, 'P_NAME', name.upper(), True)
                     if form.checkBox_4.isChecked():
@@ -501,7 +561,6 @@ def start():
                 keyboard.press('tab')
             keyboard.write(new_porject_path)
             keyboard.press('enter')
-            time.sleep(120)
         else:
             config['OPTIONS']['render_audio'] = ' '
 
@@ -527,12 +586,9 @@ def start():
                 subprocess.call(command, shell=True)
             else: 
                 QMessageBox.about(None, "Ошибка", "В рабочей папки нет аудио файла FLAC или WAV")
-
         else:
             config['OPTIONS']['render_video'] = ' '
-            print('НЕ НАЧАЛ(((')
-            
-        print("Я ЗАКОНЧИЛ")
+
         with open('config.ini', 'w') as config_file:
             config.write(config_file)
 

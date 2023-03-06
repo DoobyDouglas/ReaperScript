@@ -1,0 +1,6 @@
+<RCC>
+  <qresource prefix="newPrefix">
+    <file>programing.ico</file>
+    <file>back1.jpg</file>
+  </qresource>
+</RCC>
