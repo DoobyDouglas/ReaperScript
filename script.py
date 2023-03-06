@@ -378,7 +378,7 @@ def audio_select(
 def get_info_values():
     """Функция для получения значений видео и сна"""
     X_FILE = 5
-    video_item = RPR.GetSelectedMediaItem(0, 0)
+    video_item = RPR.GetMediaItem(0, 0)
     lenght = RPR.GetMediaItemInfo_Value(video_item, "D_LENGTH") / 60
     sleep = lenght / X_FILE
     all_tracks = RPR.GetNumTracks()
