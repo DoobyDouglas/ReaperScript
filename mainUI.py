@@ -465,6 +465,7 @@ def start():
         else:
             if form.checkBox_2.isChecked():
                 config['OPTIONS']['normalize'] = '1'
+                RPR.SelectAllMediaItems(0, True)
                 RPR.SetMediaItemSelected(video_item, False)
                 RPR.Main_OnCommand(normalize_loudness, 0)
             else:
