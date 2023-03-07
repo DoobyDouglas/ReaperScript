@@ -13,11 +13,8 @@ import os
 import glob
 import configparser
 from pathlib import Path
-import py_win_keyboard_layout
 import py_win_keyboard_layout as pwkl
-import typing
 from typing import List
-import reapy
 from reapy import reascript_api as RPR
 
 
@@ -38,9 +35,10 @@ OPTIONS = [
         'render_audio',
         'render_video',
         'newfolder',
-        'changename'
-        'runtime'
-        'savetime'
+        'changename',
+        'runtime',
+        'savetime',
+        'fxtime'
     ]
 
 
@@ -68,6 +66,9 @@ def save_path_to_config(name, path):
     if 'PATHS' not in config:
         config['PATHS'] = {}
     config['PATHS'][name] = path
+    if 'OPTIONS' not in config:
+        config['OPTIONS'] = {}
+    config['OPTIONS'][name] = path
     with open('config.ini', 'w') as config_file:
         config.write(config_file)
 
@@ -81,6 +82,18 @@ def load_path_from_config(name):
         path = None
     return path
 
+def check_reaper():
+    for proc in psutil.process_iter():
+            name = proc.name()
+            if name == 'reaper.exe':
+                break
+    if name != 'reaper.exe':
+        msgBox = QMessageBox()
+        msgBox.setWindowTitle("Ошибка")
+        msgBox.setText('Рипер не открыт. Программа закроется, запустите рипер.')
+        msgBox.setStandardButtons(QMessageBox.Close)
+        if msgBox.exec_() == QMessageBox.Close:
+            sys.exit()
 
 def start():
 
@@ -90,10 +103,13 @@ def start():
     form = Form()
     form.setupUi(window)
     window.show()'''
-
+    config = get_config()
     form.lineEdit_3.setText(load_path_from_config('reaper_path'))   
     form.lineEdit_2.setText(load_path_from_config('project_path'))  
-    form.lineEdit.setText(load_path_from_config('fx_chains_folder'))    
+    form.lineEdit.setText(load_path_from_config('fx_chains_folder'))   
+    form.lineEdit_5.setText(config['OPTIONS']['runtime']) 
+    form.lineEdit_6.setText(config['OPTIONS']['savetime'])
+    form.lineEdit_7.setText(config['OPTIONS']['fxtime'])
     
     #провекра на запущенный рипер, выполняется только если есть путь к риперу
     if load_path_from_config('reaper_path'):
@@ -185,15 +201,15 @@ def start():
     form.checkBox_8.setChecked(bool(config['OPTIONS']['render_video']))
     form.checkBox_9.setChecked(bool(config['OPTIONS']['newfolder']))
 
-    def checkboxUI(param: str):
+    def checkboxUI(param: str):       
         config = get_config()
-
+        check_reaper()
         #если пользователь написал свои числа в задержу(для регулировки работы приложения), то принимаются его значения в sleep, если нет, то наши стандарт 1с
         if form.lineEdit_5.text():
             if form.lineEdit_5.text().replace(".", "", 1).isdigit():
                 if float(form.lineEdit_5.text()) < 11 :
                     runtime = float(form.lineEdit_5.text()) 
-                    save_path_to_config('runtime', runtime)
+                    config['OPTIONS']['runtime'] = f'{runtime}'
                 else:
                     QMessageBox.about(None, "Ошибка", "Задержка при открытии слишком большая(max. 10)")
                     return       
@@ -201,13 +217,14 @@ def start():
                 QMessageBox.about(None, "Ошибка", "В задержку можно ввести только число от 0 до 10")
                 return
         else:
+            config['OPTIONS']['runtime'] = ''
             runtime = 1
 
         if form.lineEdit_6.text():
             if form.lineEdit_6.text().replace(".", "", 1).isdigit():
                 if float(form.lineEdit_6.text()) < 11 :
                     savetime = float(form.lineEdit_6.text())
-                    save_path_to_config('savetime', savetime)
+                    config['OPTIONS']['savetime'] = f'{savetime}'
                 else:
                     QMessageBox.about(None, "Ошибка", "Задержка при сохранении слишком большая(max. 10)")
                     return       
@@ -215,10 +232,23 @@ def start():
                 QMessageBox.about(None, "Ошибка", "В задержку можно ввести только число от 0 до 10")
                 return
         else:
+            config['OPTIONS']['savetime'] = ''
             savetime = 1
 
-
-        #addfxtime = form.lineEdit_7.text()
+        if form.lineEdit_7.text():
+            if form.lineEdit_7.text().replace(".", "", 1).isdigit():
+                if float(form.lineEdit_7.text()) < 11 :
+                    fxtime = float(form.lineEdit_7.text())
+                    config['OPTIONS']['fxtime'] = f'{fxtime}'
+                else:
+                    QMessageBox.about(None, "Ошибка", "Задержка при сохранении слишком большая(max. 10)")
+                    return       
+            else:
+                QMessageBox.about(None, "Ошибка", "В задержку можно ввести только число от 0 до 10")
+                return
+        else:
+            config['OPTIONS']['fxtime'] = ''
+            fxtime = 0.5
 
         #проверяем выбраны ли все рабочие папки
         if bool(load_path_from_config('fx_chains_folder')) == False or bool(load_path_from_config('project_path')) == False or bool(load_path_from_config('reaper_path')) == False or bool(form.lineEdit_4.text()) == False:
@@ -273,6 +303,7 @@ def start():
                 title = folder.split('/')[-2]
                 os.rename(folder + "/" + videoname, folder + '/' + title + '_' + videoname)
                 videoname = ''.join(([_ for _ in os.listdir(folder) if _.endswith(fileExtMp4)]))
+                return title
             videofolder = f'{folder}/{videoname}'
 
             if glob.glob(os.path.join(folder, '*.srt')):
@@ -283,7 +314,7 @@ def start():
                 subs = glob.glob(os.path.join(folder, '*.vtt'))
                 filenamae = os.path.splitext(subs[0])[0].split('\\')[-2]
                 os.rename(subs[0], filenamae + '/' + s_number + '.vtt')
-                command = f'ffmpeg -i {subs[0]} {folder}/{s_number}.srt'
+                command = f'ffmpeg -i "{subs[0]}" "{folder}/{s_number}.srt"'
                 subprocess.call(command, shell=True)
             elif glob.glob(os.path.join(folder, '*.ass')): #нахождение ASS
                 subs = glob.glob(os.path.join(folder, '*.ass'))
@@ -294,7 +325,7 @@ def start():
                 command1 = f'{disk}: && cd {folder_path} && asstosrt -e utf-8'
                 subprocess.call(command1, shell=True)
             else:
-                command = f'ffmpeg -i {folder}/{videoname} {folder}/{s_number}.ass'
+                command = f'ffmpeg -i "{folder}/{videoname}" "{folder}/{s_number}.ass"'
                 subprocess.call(command, shell=True)
                 if glob.glob(os.path.join(folder, '*.ass')): #если достал ASS конверт в SRT
                     disk = folder.split(':')[0].lower()
@@ -302,7 +333,7 @@ def start():
                     command1 = f'{disk}: && cd {folder_path} && asstosrt -e utf-8'
                     subprocess.call(command1, shell=True)
                 else: #если не достал ASS, пытается достать SRT
-                    command = f'ffmpeg -i {folder}/{videoname} {folder}/{s_number}.srt'
+                    command = f'ffmpeg -i "{folder}/{videoname}" "{folder}/{s_number}.srt"'
                     subprocess.call(command, shell=True)
         else:
             try:
@@ -315,6 +346,7 @@ def start():
                 title = folder.split('/')[-2]
                 os.rename(folder + "/" + videoname, folder + '/' + title + '_' + videoname)
                 videoname = ''.join(([_ for _ in os.listdir(folder) if _.endswith(fileExtMkv)]))
+                return title
             videofolder = f'{folder}/{videoname}'
 
             if glob.glob(os.path.join(folder, '*.srt')): #нахождение SRT
@@ -325,7 +357,7 @@ def start():
                 subs = glob.glob(os.path.join(folder, '*.vtt'))
                 filenamae = os.path.splitext(subs[0])[0].split('\\')[-2]
                 os.rename(subs[0], filenamae + '/' + s_number + '.vtt')
-                command = f'ffmpeg -i {subs[0]} {folder}/{s_number}.srt'
+                command = f'ffmpeg -i "{subs[0]}" "{folder}/{s_number}.srt"'
                 subprocess.call(command, shell=True)
             elif glob.glob(os.path.join(folder, '*.ass')): #нахождение ASS
                 subs = glob.glob(os.path.join(folder, '*.ass'))
@@ -336,7 +368,7 @@ def start():
                 command1 = f'{disk}: && cd {folder_path} && asstosrt -e utf-8'
                 subprocess.call(command1, shell=True)
             else: #доставание ASS из MKV
-                command = f'ffmpeg -i {folder}/{videoname} -map 0:s:m:language:eng -map -0:s:m:title:SDH {folder}/{s_number}.ass'
+                command = f'ffmpeg -i "{folder}/{videoname}" -map 0:s:m:language:eng -map -0:s:m:title:SDH "{folder}/{s_number}.ass"'
                 subprocess.call(command, shell=True)
                 if glob.glob(os.path.join(folder, '*.ass')): #если достал ASS конверт в SRT
                     disk = folder.split(':')[0].lower()
@@ -344,7 +376,7 @@ def start():
                     command1 = f'{disk}: && cd {folder_path} && asstosrt -e utf-8'
                     subprocess.call(command1, shell=True)
                 else: #если не достал ASS, пытается достать SRT
-                    command = f'ffmpeg -i {folder}/{videoname} -map 0:s:m:language:eng -map -0:s:m:title:SDH {folder}/{s_number}.srt'
+                    command = f'ffmpeg -i "{folder}/{videoname}" -map 0:s:m:language:eng -map -0:s:m:title:SDH "{folder}/{s_number}.srt"'
                     subprocess.call(command, shell=True)
         if glob.glob(os.path.join(folder, '*.srt')): #если есть после всех манипуляций в папке есть SRT, то привязываем полный путь к переменной
             if glob.glob(os.path.join(folder, '*.ass')):
@@ -422,7 +454,7 @@ def start():
             if os.path.exists(f'{folder}/{s_number}') == False:  # если нет внутри такой папки то создает её и сохраняет
                 os.mkdir(folder + "/" + s_number)
                 new_folder = f'{folder}/{s_number}'
-                new_porject_path = new_folder.replace('/', '\\') + '\\' + f'{s_number}'
+                new_porject_path = new_folder.replace('/', '\\') + '\\' + f'{s_number}.rpp'
                 time.sleep(savetime)
                 keyboard.send('ctrl+alt+s')
                 time.sleep(savetime)
@@ -432,7 +464,7 @@ def start():
             #если есть, то просто сохраняет туда
             else:
                 new_folder = f'{folder}/{s_number}'
-                new_porject_path = new_folder.replace('/', '\\') + '\\' + f'{s_number}'
+                new_porject_path = new_folder.replace('/', '\\') + '\\' + f'{s_number}.rpp'
                 time.sleep(savetime)
                 keyboard.send('ctrl+alt+s')
                 time.sleep(savetime)
@@ -440,7 +472,7 @@ def start():
                 keyboard.send('enter')
         else:
             config['OPTIONS']['newfolder'] = ' '
-            new_porject_path = folder.replace('/', '\\') + '\\' + f'{s_number}'
+            new_porject_path = folder.replace('/', '\\') + '\\' + f'{s_number}.rpp'
             time.sleep(savetime)
             keyboard.send('ctrl+alt+s')
             time.sleep(savetime)
@@ -456,7 +488,7 @@ def start():
             for name in fx_dict:
                 if name in file.split('\\')[-1].lower():
                     RPR.TrackFX_AddByName(track, fx_dict[name], 0, -1)
-                    #я бы сюда поставил слип, потому что бывает тяжелые пресеты для дабберов
+                    time.sleep(fxtime)
                     RPR.GetSetMediaTrackInfo_String(
                         track, 'P_NAME', name.upper(), True)
                     if form.checkBox_4.isChecked():
@@ -471,7 +503,7 @@ def start():
             for name in fx_dict:
                 if name in file.split('\\')[-1].lower():
                     RPR.TrackFX_AddByName(track, fx_dict[name], 0, -1)
-                    #я бы сюда поставил слип, потому что бывает тяжелые пресеты для дабберов
+                    time.sleep(fxtime)
                     RPR.GetSetMediaTrackInfo_String(
                         track, 'P_NAME', name.upper(), True)
                     if form.checkBox_4.isChecked():
@@ -491,7 +523,7 @@ def start():
                 pass
             else:
                 keyboard.send('ctrl+t')
-                time.sleep(1)
+                RPR.GetSetMediaTrackInfo_String(RPR.GetLastTouchedTrack(), 'P_NAME', 'СУБТИТРЫ', True)
                 keyboard.send('ctrl+0')
                 time.sleep(1)
                 fix_path = localsub.replace('/', '\\')

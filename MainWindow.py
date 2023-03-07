@@ -203,15 +203,19 @@ class Ui_MainWindow(object):
         self.label_2 = QtWidgets.QLabel(self.frame_3)
         self.label_2.setGeometry(QtCore.QRect(290, 10, 131, 16))
         self.label_2.setObjectName("label_2")
+        self.label_2.setStyleSheet("background: rgba(0, 0, 0, 0)")
         self.label_3 = QtWidgets.QLabel(self.frame_3)
         self.label_3.setGeometry(QtCore.QRect(10, 70, 131, 16))
         self.label_3.setObjectName("label_3")
+        self.label_3.setStyleSheet("background: rgba(0, 0, 0, 0)")
         self.label = QtWidgets.QLabel(self.frame_3)
         self.label.setGeometry(QtCore.QRect(10, 10, 131, 16))
         self.label.setObjectName("label")
+        self.label.setStyleSheet("background: rgba(0, 0, 0, 0)")
         self.label_4 = QtWidgets.QLabel(self.frame_3)
         self.label_4.setGeometry(QtCore.QRect(290, 70, 131, 16))
         self.label_4.setObjectName("label_4")
+        self.label_4.setStyleSheet("background: rgba(0, 0, 0, 0)")
         self.lineEdit_2 = QtWidgets.QLineEdit(self.frame_3)
         self.lineEdit_2.setGeometry(QtCore.QRect(290, 30, 181, 20))
         self.lineEdit_2.setStyleSheet("color:white;\n"
@@ -349,7 +353,7 @@ class Ui_MainWindow(object):
         self.pushButton_2.setText(_translate("MainWindow", "Выбрать"))
         self.lineEdit_5.setPlaceholderText(_translate("MainWindow", "Задержка при открытии (def = 1s)"))
         self.lineEdit_6.setPlaceholderText(_translate("MainWindow", "Задержка при сохранении (def = 1s)"))
-        self.lineEdit_7.setPlaceholderText(_translate("MainWindow", "Задержка при добавлении FX (def = 1s)"))
+        self.lineEdit_7.setPlaceholderText(_translate("MainWindow", "Задержка при добавлении FX (def = 0.5s)"))
 import resursec_rc
 
 
