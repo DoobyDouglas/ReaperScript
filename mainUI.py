@@ -1,8 +1,7 @@
 from PyQt5.QtWidgets import QApplication, QMessageBox
 from MainWindow import *
-import configparser
 
-from pathlib import Path
+import configparser
 import psutil
 import asstosrt
 import sys
@@ -13,9 +12,12 @@ import time
 import os
 import glob
 import configparser
-import reapy
+from pathlib import Path
+import py_win_keyboard_layout
 import py_win_keyboard_layout as pwkl
+import typing
 from typing import List
+import reapy
 from reapy import reascript_api as RPR
 
 
@@ -608,6 +610,7 @@ def start():
 
 app = QtWidgets.QApplication(sys.argv)
 MainWindow = QtWidgets.QMainWindow()
+MainWindow.show()
 form = Ui_MainWindow()
 form.setupUi(MainWindow)
 MainWindow.show()
