@@ -1,20 +1,19 @@
-from PyQt5 import uic, QtWidgets
 from PyQt5.QtWidgets import QApplication, QMessageBox
+from MainWindow import *
 import configparser
 
 from pathlib import Path
+import psutil
 import asstosrt
+import sys
 import os
 import keyboard
 import subprocess
 import time
 import os
 import glob
-import pyautogui
 import configparser
 import reapy
-import tkinter
-import tkinter.messagebox
 import py_win_keyboard_layout as pwkl
 from typing import List
 from reapy import reascript_api as RPR
@@ -38,6 +37,8 @@ OPTIONS = [
         'render_video',
         'newfolder',
         'changename'
+        'runtime'
+        'savetime'
     ]
 
 
@@ -79,29 +80,36 @@ def load_path_from_config(name):
 
 def start():
 
-    Form, Window = uic.loadUiType("MainWindow.ui")
-
+    '''Form, Window = uic.loadUiType("MainWindow.ui")
     app = QApplication([])
     window = Window()
     form = Form()
     form.setupUi(window)
-    window.show()
+    window.show()'''
+
+
 
     form.lineEdit_3.setText(load_path_from_config('reaper_path'))   
     form.lineEdit_2.setText(load_path_from_config('project_path'))  
     form.lineEdit.setText(load_path_from_config('fx_chains_folder'))    
     
-    #доделать проверку о включенном рипере + сделать предложение запустить рипер
-    #if load_path_from_config('reaper_path'):
-        #openreaper = subprocess.Popen(load_path_from_config('reaper_path'))
-        #if openreaper.poll() == None:
-            #QMessageBox.about(None, "Ошибка", "Программа открыта!!!")
-            #return
-
-    
-    
-    #рипер ехе
-                    
+    #провекра на запущенный рипер, выполняется только если есть путь к риперу
+    if load_path_from_config('reaper_path'):
+        for proc in psutil.process_iter():
+            name = proc.name()
+            if name == 'reaper.exe':
+                break
+        if name != 'reaper.exe':
+            msgBox = QMessageBox()
+            msgBox.setWindowTitle("ВАЖНО")
+            msgBox.setText('Для работы программы reaper должен быть открыт, запустить reaper? После запуска нужно перезапустить программу.')
+            msgBox.setStandardButtons(QMessageBox.Yes | QMessageBox.No)
+            msgBox.setDefaultButton(QMessageBox.Yes)
+            if msgBox.exec_() == QMessageBox.Yes:
+                subprocess.Popen(load_path_from_config('reaper_path'))
+                os.execl(sys.executable, sys.executable, *sys.argv)
+   
+    #рипер ехе      
     def repear_exe():
         reaper_path = load_path_from_config('reaper_path')
         reaper_path = QtWidgets.QFileDialog.getOpenFileName(None,
@@ -118,8 +126,7 @@ def start():
         
     form.pushButton_3.clicked.connect(repear_exe)
 
-    #шаблон
-                
+    #шаблон   
     def project_folder():
         project_path = load_path_from_config('project_path')
         project_path = QtWidgets.QFileDialog.getOpenFileName(None,
@@ -135,8 +142,7 @@ def start():
         
     form.pushButton_2.clicked.connect(project_folder)
 
-    #FX
-                
+    #FX        
     def fx_folder():
         fx_chains_folder = load_path_from_config('fx_chains_folder')
         fx_chains_folder = QtWidgets.QFileDialog.getExistingDirectory(None, 'Выбор FX')
@@ -180,9 +186,10 @@ def start():
 
         #если пользователь написал свои числа в задержу(для регулировки работы приложения), то принимаются его значения в sleep, если нет, то наши стандарт 1с
         if form.lineEdit_5.text():
-            if form.lineEdit_5.text().isdigit():
-                if int(form.lineEdit_5.text()) < 11 :
-                    runtime = form.lineEdit_5.text() 
+            if form.lineEdit_5.text().replace(".", "", 1).isdigit():
+                if float(form.lineEdit_5.text()) < 11 :
+                    runtime = float(form.lineEdit_5.text()) 
+                    save_path_to_config('runtime', runtime)
                 else:
                     QMessageBox.about(None, "Ошибка", "Задержка при открытии слишком большая(max. 10)")
                     return       
@@ -193,9 +200,10 @@ def start():
             runtime = 1
 
         if form.lineEdit_6.text():
-            if form.lineEdit_6.text().isdigit():
-                if int(form.lineEdit_6.text()) < 11 :
-                    savetime = form.lineEdit_6.text() 
+            if form.lineEdit_6.text().replace(".", "", 1).isdigit():
+                if float(form.lineEdit_6.text()) < 11 :
+                    savetime = float(form.lineEdit_6.text())
+                    save_path_to_config('savetime', savetime)
                 else:
                     QMessageBox.about(None, "Ошибка", "Задержка при сохранении слишком большая(max. 10)")
                     return       
@@ -205,18 +213,19 @@ def start():
         else:
             savetime = 1
 
+
         #addfxtime = form.lineEdit_7.text()
+
+        #проверяем выбраны ли все рабочие папки
+        if bool(load_path_from_config('fx_chains_folder')) == False or bool(load_path_from_config('project_path')) == False or bool(load_path_from_config('reaper_path')) == False or bool(form.lineEdit_4.text()) == False:
+            QMessageBox.about(None, "Ошибка", "Вы не выбрали все рабочие папки")
+            return
 
         s_number = os.path.basename(folder)
         fileExtMp4 = r".mp4"
         fileExtMkv = r".mkv"
         videonamemp4 = ''.join(([_ for _ in os.listdir(folder) if _.endswith(fileExtMp4)]))
         videonamemkv = ''.join(([_ for _ in os.listdir(folder) if _.endswith(fileExtMkv)]))
-
-        #проверяем выбраны ли все рабочие папки
-        if bool(load_path_from_config('fx_chains_folder')) == False or bool(load_path_from_config('project_path')) == False or bool(load_path_from_config('reaper_path')) == False or bool(form.lineEdit_4.text()) == False:
-            QMessageBox.about(None, "Ошибка", "Вы не выбрали все рабочие папки")
-            return
 
         #Проверяем на все аудио
         if bool(glob.glob(os.path.join(folder, '*.flac*'))) == False and bool(glob.glob(os.path.join(folder, '*.flac'))) == False and bool(glob.glob(os.path.join(folder, '*.wav*'))) == False and bool(glob.glob(os.path.join(folder, '*.wav'))) == False:
@@ -249,7 +258,6 @@ def start():
             
 
         #Функция для изменения имени видео, создание папки, вытаскивание субтитров, конвертация субтитров vtt
-
         if bool(videonamemp4) == True:
             try:
                 videoname = os.rename(folder + "/" + videonamemp4, folder + "/" + s_number + fileExtMp4)
@@ -596,4 +604,11 @@ def start():
     app.exec()
 
 
+
+
+app = QtWidgets.QApplication(sys.argv)
+MainWindow = QtWidgets.QMainWindow()
+form = Ui_MainWindow()
+form.setupUi(MainWindow)
+MainWindow.show()
 start()
