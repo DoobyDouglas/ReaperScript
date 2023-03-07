@@ -44,6 +44,8 @@ OPTIONS = [
     ]
 
 
+
+
 # настройка конфига
 def get_config():
     config = configparser.ConfigParser()
@@ -89,8 +91,6 @@ def start():
     form.setupUi(window)
     window.show()'''
 
-
-
     form.lineEdit_3.setText(load_path_from_config('reaper_path'))   
     form.lineEdit_2.setText(load_path_from_config('project_path'))  
     form.lineEdit.setText(load_path_from_config('fx_chains_folder'))    
@@ -133,13 +133,14 @@ def start():
         project_path = load_path_from_config('project_path')
         project_path = QtWidgets.QFileDialog.getOpenFileName(None,
             'Выберите файл шаблона проекта REAPER',
-            None,
+            os.environ['appdata'],
             'RPP file (*.rpp)'
         )[0]
         if not project_path:
             pass
-        save_path_to_config('project_path', project_path)
-        form.lineEdit_2.setText(project_path)
+        else:
+            save_path_to_config('project_path', project_path)
+            form.lineEdit_2.setText(project_path)
         return project_path
         
     form.pushButton_2.clicked.connect(project_folder)
@@ -147,11 +148,12 @@ def start():
     #FX        
     def fx_folder():
         fx_chains_folder = load_path_from_config('fx_chains_folder')
-        fx_chains_folder = QtWidgets.QFileDialog.getExistingDirectory(None, 'Выбор FX')
+        fx_chains_folder = QtWidgets.QFileDialog.getExistingDirectory(None, 'Выбор FX', os.environ['appdata'])
         if not fx_chains_folder:
             pass
-        save_path_to_config('fx_chains_folder', fx_chains_folder)
-        form.lineEdit.setText(fx_chains_folder)
+        else:
+            save_path_to_config('fx_chains_folder', fx_chains_folder)
+            form.lineEdit.setText(fx_chains_folder)
         return fx_chains_folder
         
     form.pushButton.clicked.connect(fx_folder)
