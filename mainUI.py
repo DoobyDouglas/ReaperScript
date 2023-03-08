@@ -302,12 +302,25 @@ def start():
         s_number = os.path.basename(folder)
         fileExtMp4 = r".mp4"
         fileExtMkv = r".mkv"
-        videonamemp4 = ''.join(([_ for _ in os.listdir(folder) if _.endswith(fileExtMp4)]))
-        videonamemkv = ''.join(([_ for _ in os.listdir(folder) if _.endswith(fileExtMkv)]))
+        videonamemp4 = ''.join(
+            ([_ for _ in os.listdir(folder) if _.endswith(fileExtMp4)])
+        )
+        videonamemkv = ''.join(
+            ([_ for _ in os.listdir(folder) if _.endswith(fileExtMkv)])
+        )
 
         # Проверяем на все аудио
-        if bool(glob.glob(os.path.join(folder, '*.flac*'))) == False and bool(glob.glob(os.path.join(folder, '*.flac'))) == False and bool(glob.glob(os.path.join(folder, '*.wav*'))) == False and bool(glob.glob(os.path.join(folder, '*.wav'))) == False:
-            QMessageBox.about(None, "Ошибка", "В папке нет ни одного аудио файла")
+        if (
+             not glob.glob(os.path.join(folder, '*.flac*'))
+             and not glob.glob(os.path.join(folder, '*.flac'))
+             and not glob.glob(os.path.join(folder, '*.wav*'))
+             and not glob.glob(os.path.join(folder, '*.wav'))
+             ):
+            QMessageBox.about(
+                None,
+                "Ошибка",
+                "В папке нет ни одного аудио файла"
+            )
             return
 
         # Получает List мп4 и мкв
@@ -315,16 +328,24 @@ def start():
         count_mp4 = glob.glob(os.path.join(folder, '*.mp4'))
 
         # Проверка на видеофайлы
-        if bool(count_mp4) == False and bool(count_mkv) == False: #если нет ни одного
+        if not count_mp4 and not count_mkv:  # если нет ни одного
             QMessageBox.about(None, "Ошибка", "В папке нет видеофайлов")
             return
-        elif len(count_mkv) > 1: #если мкв больше одного
-            QMessageBox.about(None, "Ошибка", "В папке несколько видео формата MKV")
+        elif len(count_mkv) > 1:  # если мкв больше одного
+            QMessageBox.about(
+                None,
+                "Ошибка",
+                "В папке несколько видео формата MKV"
+            )
             return
-        elif len(count_mp4) > 1: #если мп4 больше одного
-            QMessageBox.about(None, "Ошибка", "В папке несколько видео формата MP4")
+        elif len(count_mp4) > 1:  # если мп4 больше одного
+            QMessageBox.about(
+                None,
+                "Ошибка",
+                "В папке несколько видео формата MP4"
+            )
             return
-        elif count_mkv and count_mp4: #если есть и мп4 и мкв
+        elif count_mkv and count_mp4:  # если есть и мп4 и мкв
             QMessageBox.about(None, "Ошибка", "В папке несколько видео")
             return
 
@@ -332,13 +353,21 @@ def start():
         current_layout = pwkl.get_foreground_window_keyboard_layout()
         if current_layout != 67699721:
             pwkl.change_foreground_window_keyboard_layout(0x00000409)
-            QMessageBox.about(None, "Ошибка", "Неправильная раскладка. Если раскладнка не поменялась сама - поменяйте вручную. Нажмите на кнопку еще раз")
+            QMessageBox.about(
+                None,
+                "Ошибка",
+                "Неправильная раскладка. Если раскладнка не поменялась сама - "
+                "поменяйте вручную. Нажмите на кнопку еще раз"
+            )
 
-
-        # Функция для изменения имени видео, создание папки, вытаскивание субтитров, конвертация субтитров vtt
+        # Функция для изменения имени видео, создание папки,
+        # вытаскивание субтитров, конвертация субтитров vtt
         if videonamemp4:
             try:
-                videoname = os.rename(folder + "/" + videonamemp4, folder + "/" + s_number + fileExtMp4)
+                videoname = os.rename(
+                    folder + "/" + videonamemp4,
+                    folder + "/" + s_number + fileExtMp4
+                )
             except OSError:
                 QMessageBox.about(None, "Ошибка", "Видеофайл используется")
                 return
@@ -370,12 +399,12 @@ def start():
             else:
                 command = f'ffmpeg -i "{folder}/{videoname}" "{folder}/{s_number}.ass"'
                 subprocess.call(command, shell=True)
-                if glob.glob(os.path.join(folder, '*.ass')): #если достал ASS конверт в SRT
+                if glob.glob(os.path.join(folder, '*.ass')):  # если достал ASS конверт в SRT
                     disk = folder.split(':')[0].lower()
                     folder_path = folder.split(':')[1]
                     command1 = f'{disk}: && cd {folder_path} && asstosrt -e utf-8'
                     subprocess.call(command1, shell=True)
-                else: #если не достал ASS, пытается достать SRT
+                else:  # если не достал ASS, пытается достать SRT
                     command = f'ffmpeg -i "{folder}/{videoname}" "{folder}/{s_number}.srt"'
                     subprocess.call(command, shell=True)
         else:
@@ -391,17 +420,17 @@ def start():
                 videoname = ''.join(([_ for _ in os.listdir(folder) if _.endswith(fileExtMkv)]))
             videofolder = f'{folder}/{videoname}'
 
-            if glob.glob(os.path.join(folder, '*.srt')): #нахождение SRT
+            if glob.glob(os.path.join(folder, '*.srt')):  # нахождение SRT
                 subs = glob.glob(os.path.join(folder, '*.srt'))
                 filenamae = os.path.splitext(subs[0])[0].split('\\')[-2]
                 os.rename(subs[0], filenamae + '/' + s_number + '.srt')
-            elif glob.glob(os.path.join(folder, '*.vtt')): #нахождение VTT
+            elif glob.glob(os.path.join(folder, '*.vtt')):  # нахождение VTT
                 subs = glob.glob(os.path.join(folder, '*.vtt'))
                 filenamae = os.path.splitext(subs[0])[0].split('\\')[-2]
                 os.rename(subs[0], filenamae + '/' + s_number + '.vtt')
                 command = f'ffmpeg -i "{subs[0]}" "{folder}/{s_number}.srt"'
                 subprocess.call(command, shell=True)
-            elif glob.glob(os.path.join(folder, '*.ass')): #нахождение ASS
+            elif glob.glob(os.path.join(folder, '*.ass')):  # нахождение ASS
                 subs = glob.glob(os.path.join(folder, '*.ass'))
                 filenamae = os.path.splitext(subs[0])[0].split('\\')[-2]
                 os.rename(subs[0], filenamae + '/' + s_number + '.ass')
@@ -412,7 +441,7 @@ def start():
             else:  # доставание ASS из MKV
                 command = f'ffmpeg -i "{folder}/{videoname}" -map 0:s:m:language:eng -map -0:s:m:title:SDH "{folder}/{s_number}.ass"'
                 subprocess.call(command, shell=True)
-                if glob.glob(os.path.join(folder, '*.ass')): #если достал ASS конверт в SRT
+                if glob.glob(os.path.join(folder, '*.ass')):  # если достал ASS конверт в SRT
                     disk = folder.split(':')[0].lower()
                     folder_path = folder.split(':')[1]
                     command1 = f'{disk}: && cd {folder_path} && asstosrt -e utf-8'
@@ -420,7 +449,7 @@ def start():
                 else:  # если не достал ASS, пытается достать SRT
                     command = f'ffmpeg -i "{folder}/{videoname}" -map 0:s:m:language:eng -map -0:s:m:title:SDH "{folder}/{s_number}.srt"'
                     subprocess.call(command, shell=True)
-        if glob.glob(os.path.join(folder, '*.srt')): #если есть после всех манипуляций в папке есть SRT, то привязываем полный путь к переменной
+        if glob.glob(os.path.join(folder, '*.srt')):  # если есть после всех манипуляций в папке есть SRT, то привязываем полный путь к переменной
             if glob.glob(os.path.join(folder, '*.ass')):
                 subs = glob.glob(os.path.join(folder, '*.ass'))
                 filenamae = os.path.splitext(subs[0])[0].split('\\')[-2]
@@ -434,9 +463,9 @@ def start():
             localsub = f'{folder}/{s_number}.srt'
         else:
             localsub = 'NotFound'
-        #localsub - путь к файлу сабов, videofolder - путь к видеофайлу
+        # localsub - путь к файлу сабов, videofolder - путь к видеофайлу
 
-        #нахождение неправильных форматов и переименовка
+        # нахождение неправильных форматов и переименовка
         if glob.glob(os.path.join(folder, '*.flac*')):
             flac_audio = glob.glob(os.path.join(folder, '*.flac*'))
             if flac_audio:
@@ -448,10 +477,15 @@ def start():
                             try:
                                 os.rename(file, filename + '.flac')
                             except OSError:
-                                QMessageBox.about(None, "Ошибка", "Аудиофайл используется")
+                                QMessageBox.about(
+                                    None,
+                                    "Ошибка",
+                                    "Аудиофайл используется"
+                                )
                                 return
                     else:
                         pass
+
         # находить нормальные файла
         flac_audio = glob.glob(os.path.join(folder, '*.flac'))
         # изменение на нормальный путь
@@ -468,7 +502,11 @@ def start():
                             try:
                                 os.rename(file, filename + '.wav')
                             except OSError:
-                                QMessageBox.about(None, "Ошибка", "Аудиофайл используется")
+                                QMessageBox.about(
+                                    None,
+                                    "Ошибка",
+                                    "Аудиофайл используется"
+                                )
                                 return
                     else:
                         pass
@@ -497,7 +535,7 @@ def start():
         if form.checkBox_9.isChecked():
             config['OPTIONS']['newfolder'] = '1'
             # если нет внутри такой папки то создает её и сохраняет
-            if os.path.exists(f'{folder}/{s_number}') == False:
+            if not os.path.exists(f'{folder}/{s_number}'):
                 os.mkdir(folder + "/" + s_number)
                 new_folder = f'{folder}/{s_number}'
                 new_porject_path = (
@@ -588,7 +626,8 @@ def start():
         # если уменьшить значение X_FILE
         # Значения пригодятся и в других функциях
         video_item = RPR.GetMediaItem(0, 0)
-        # lenght = RPR.GetMediaItemInfo_Value(video_item, "D_LENGTH") / 60 пока не нужно, но для функции рендера
+        # lenght = RPR.GetMediaItemInfo_Value(video_item, "D_LENGTH") / 60
+        # пока не нужно, но для функции рендера
         all_tracks = RPR.GetNumTracks()
 
         # Сплит
@@ -662,10 +701,12 @@ def start():
             RPR.Main_OnCommand(40015, 0)
             time.sleep(1)
             keyboard.write(s_number)
+            fix_path = folder.replace('/', '\\')
             time.sleep(1)
             for i in range(34):
                 keyboard.press('tab')
-            keyboard.write(new_porject_path)
+                time.sleep(0.1)
+            keyboard.write(fix_path)
             keyboard.press('enter')
         else:
             config['OPTIONS']['render_audio'] = ' '
