@@ -52,9 +52,6 @@ def get_config():
         config.add_section('PATHS')
         for path in PATHS:
             config.set('PATHS', path, '')
-        config.add_section('OPTIONS')
-        for option in OPTIONS:
-            config.set('OPTIONS', option, '')
         with open('config.ini', "w") as config_file:
             config.write(config_file)
     return config
@@ -303,7 +300,6 @@ def start():
                 title = folder.split('/')[-2]
                 os.rename(folder + "/" + videoname, folder + '/' + title + '_' + videoname)
                 videoname = ''.join(([_ for _ in os.listdir(folder) if _.endswith(fileExtMp4)]))
-                return title
             videofolder = f'{folder}/{videoname}'
 
             if glob.glob(os.path.join(folder, '*.srt')):
@@ -346,7 +342,7 @@ def start():
                 title = folder.split('/')[-2]
                 os.rename(folder + "/" + videoname, folder + '/' + title + '_' + videoname)
                 videoname = ''.join(([_ for _ in os.listdir(folder) if _.endswith(fileExtMkv)]))
-                return title
+                print(videoname)
             videofolder = f'{folder}/{videoname}'
 
             if glob.glob(os.path.join(folder, '*.srt')): #нахождение SRT
@@ -369,6 +365,7 @@ def start():
                 subprocess.call(command1, shell=True)
             else: #доставание ASS из MKV
                 command = f'ffmpeg -i "{folder}/{videoname}" -map 0:s:m:language:eng -map -0:s:m:title:SDH "{folder}/{s_number}.ass"'
+                print(command)
                 subprocess.call(command, shell=True)
                 if glob.glob(os.path.join(folder, '*.ass')): #если достал ASS конверт в SRT
                     disk = folder.split(':')[0].lower()
@@ -498,7 +495,7 @@ def start():
                     else:
                         config['OPTIONS']['volume'] = ' '
         for file in wav_audio:
-            RPR.InsertMedia(file, 0)
+            RPR.InsertMedia(file, 1)
             track = RPR.GetLastTouchedTrack()
             for name in fx_dict:
                 if name in file.split('\\')[-1].lower():
@@ -516,7 +513,62 @@ def start():
         #Добавляем видео
         RPR.InsertMedia(videofolder, (1 << 9) | 0)
 
-        # Добавляем сабы айтемы
+        # Можно дать больше времени на работу сплита,
+        # если уменьшить значение X_FILE
+        # Значения пригодятся и в других функциях
+        X_FILE = 5
+        video_item = RPR.GetMediaItem(0, 0)
+        lenght = RPR.GetMediaItemInfo_Value(video_item, "D_LENGTH") / 60
+        sleep = lenght / X_FILE
+        all_tracks = RPR.GetNumTracks()
+        dub_tracks = all_tracks - 2
+        split_sleep = dub_tracks * sleep
+
+        # Сплит
+        if form.checkBox.isChecked():
+            config['OPTIONS']['split'] = '1'
+            RPR.SetMediaItemSelected(video_item, False)
+            keyboard.send('shift+a')
+            time.sleep(1)
+            keyboard.send('enter')
+            time.sleep(1)
+            items_list = []
+            items = RPR.CountMediaItems(0)
+            items_list.append(items)
+            while items == items_list[0]:
+                time.sleep(3)
+                items = RPR.CountMediaItems(0)
+        else:
+            config['OPTIONS']['split'] = ' '
+
+        normalize_loudness = RPR.NamedCommandLookup(
+            '_BR_NORMALIZE_LOUDNESS_ITEMS23'
+        )
+
+        # нормалайз
+        if form.checkBox_3.isChecked() and form.checkBox_2.isChecked():
+            config['OPTIONS']['normalize'] = '1'
+            config['OPTIONS']['normalize_video'] = '1'
+            RPR.SelectAllMediaItems(0, True)
+            RPR.Main_OnCommand(normalize_loudness, 0)
+        else:
+            if form.checkBox_2.isChecked():
+                config['OPTIONS']['normalize'] = '1'
+                RPR.SelectAllMediaItems(0, True)
+                RPR.SetMediaItemSelected(video_item, False)
+                RPR.Main_OnCommand(normalize_loudness, 0)
+            else:
+                config['OPTIONS']['normalize'] = ' '
+
+            if form.checkBox_3.isChecked():
+                config['OPTIONS']['normalize_video'] = '1'
+                RPR.SelectAllMediaItems(0, False)
+                RPR.SetMediaItemSelected(video_item, True)
+                RPR.Main_OnCommand(normalize_loudness, 0)
+            else:
+                config['OPTIONS']['normalize_video'] = ' '
+        
+         # Добавляем сабы айтемы
         if form.checkBox_5.isChecked():
             config['OPTIONS']['sub_item'] = '1'
             if localsub == 'NotFound':
@@ -545,55 +597,6 @@ def start():
                 keyboard.send('enter')
         else:
             config['OPTIONS']['sub_region'] = ' '
-
-        # Можно дать больше времени на работу сплита,
-        # если уменьшить значение X_FILE
-        # Значения пригодятся и в других функциях
-        X_FILE = 5
-        video_item = RPR.GetMediaItem(0, 0)
-        lenght = RPR.GetMediaItemInfo_Value(video_item, "D_LENGTH") / 60
-        sleep = lenght / X_FILE
-        all_tracks = RPR.GetNumTracks()
-        dub_tracks = all_tracks - 2
-        split_sleep = dub_tracks * sleep
-
-        # Сплит
-        if form.checkBox.isChecked():
-            config['OPTIONS']['split'] = '1'
-            RPR.SetMediaItemSelected(video_item, False)
-            RPR.Main_OnCommand(40760, 0)
-            time.sleep(split_sleep)
-            keyboard.send('enter')
-            time.sleep(1)
-        else:
-            config['OPTIONS']['split'] = ' '
-
-        normalize_loudness = RPR.NamedCommandLookup(
-            '_BR_NORMALIZE_LOUDNESS_ITEMS23'
-        )
-        
-        #нормалайз
-        if form.checkBox_3.isChecked() and form.checkBox_2.isChecked():
-            config['OPTIONS']['normalize'] = '1'
-            config['OPTIONS']['normalize_video'] = '1'
-            RPR.SelectAllMediaItems(0, True)
-            RPR.Main_OnCommand(normalize_loudness, 0)
-        else:
-            if form.checkBox_2.isChecked():
-                config['OPTIONS']['normalize'] = '1'
-                RPR.SelectAllMediaItems(0, True)
-                RPR.SetMediaItemSelected(video_item, False)
-                RPR.Main_OnCommand(normalize_loudness, 0)
-            else:
-                config['OPTIONS']['normalize'] = ' '
-
-            if form.checkBox_3.isChecked():
-                config['OPTIONS']['normalize_video'] = '1'
-                RPR.SelectAllMediaItems(0, False)
-                RPR.SetMediaItemSelected(video_item, True)
-                RPR.Main_OnCommand(normalize_loudness, 0)
-            else:
-                config['OPTIONS']['normalize_video'] = ' '
 
         if form.checkBox_7.isChecked():
             config['OPTIONS']['render_audio'] = '1'
