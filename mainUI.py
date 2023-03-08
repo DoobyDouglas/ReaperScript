@@ -3,18 +3,13 @@ from MainWindow import *
 
 import configparser
 import psutil
-import asstosrt
 import sys
 import os
 import keyboard
 import subprocess
 import time
-import os
 import glob
-import configparser
-from pathlib import Path
 import py_win_keyboard_layout as pwkl
-from typing import List
 from reapy import reascript_api as RPR
 
 
@@ -40,8 +35,6 @@ OPTIONS = [
         'savetime',
         'fxtime'
     ]
-
-
 
 
 # настройка конфига
@@ -79,21 +72,24 @@ def load_path_from_config(name):
         path = None
     return path
 
+
 def check_reaper():
     for proc in psutil.process_iter():
-            name = proc.name()
-            if name == 'reaper.exe':
-                break
+        name = proc.name()
+        if name == 'reaper.exe':
+            break
     if name != 'reaper.exe':
         msgBox = QMessageBox()
         msgBox.setWindowTitle("Ошибка")
-        msgBox.setText('Рипер не открыт. Программа закроется, запустите рипер.')
+        msgBox.setText(
+            'Рипер не открыт. Программа закроется, запустите рипер.'
+        )
         msgBox.setStandardButtons(QMessageBox.Close)
         if msgBox.exec_() == QMessageBox.Close:
             sys.exit()
 
-def start():
 
+def start():
     '''Form, Window = uic.loadUiType("MainWindow.ui")
     app = QApplication([])
     window = Window()
@@ -101,14 +97,14 @@ def start():
     form.setupUi(window)
     window.show()'''
     config = get_config()
-    form.lineEdit_3.setText(load_path_from_config('reaper_path'))   
-    form.lineEdit_2.setText(load_path_from_config('project_path'))  
-    form.lineEdit.setText(load_path_from_config('fx_chains_folder'))   
-    form.lineEdit_5.setText(config['OPTIONS']['runtime']) 
+    form.lineEdit_3.setText(load_path_from_config('reaper_path'))
+    form.lineEdit_2.setText(load_path_from_config('project_path'))
+    form.lineEdit.setText(load_path_from_config('fx_chains_folder'))
+    form.lineEdit_5.setText(config['OPTIONS']['runtime'])
     form.lineEdit_6.setText(config['OPTIONS']['savetime'])
     form.lineEdit_7.setText(config['OPTIONS']['fxtime'])
-    
-    #провекра на запущенный рипер, выполняется только если есть путь к риперу
+
+    # провекра на запущенный рипер, выполняется только если есть путь к риперу
     if load_path_from_config('reaper_path'):
         for proc in psutil.process_iter():
             name = proc.name()
@@ -117,19 +113,24 @@ def start():
         if name != 'reaper.exe':
             msgBox = QMessageBox()
             msgBox.setWindowTitle("ВАЖНО")
-            msgBox.setText('Для работы программы reaper должен быть открыт, запустить reaper? После запуска нужно перезапустить программу.')
+            msgBox.setText(
+                'Для работы программы reaper должен быть открыт, '
+                'запустить reaper? '
+                'После запуска нужно перезапустить программу.'
+            )
             msgBox.setStandardButtons(QMessageBox.Yes | QMessageBox.No)
             msgBox.setDefaultButton(QMessageBox.Yes)
             if msgBox.exec_() == QMessageBox.Yes:
                 subprocess.Popen(load_path_from_config('reaper_path'))
                 os.execl(sys.executable, sys.executable, *sys.argv)
-   
-    #рипер ехе      
+
+    # рипер ехе
     def repear_exe():
         reaper_path = load_path_from_config('reaper_path')
-        reaper_path = QtWidgets.QFileDialog.getOpenFileName(None,
+        reaper_path = QtWidgets.QFileDialog.getOpenFileName(
+            None,
             'Выбрать reaper.exe',
-            'C:\Program Files',        
+            'C:\\Program Files',
             'Exe file (reaper.exe)'
         )[0]
         if not reaper_path:
@@ -138,13 +139,14 @@ def start():
             save_path_to_config('reaper_path', reaper_path)
             form.lineEdit_3.setText(reaper_path)
         return reaper_path
-        
+
     form.pushButton_3.clicked.connect(repear_exe)
 
-    #шаблон   
+    # шаблон
     def project_folder():
         project_path = load_path_from_config('project_path')
-        project_path = QtWidgets.QFileDialog.getOpenFileName(None,
+        project_path = QtWidgets.QFileDialog.getOpenFileName(
+            None,
             'Выберите файл шаблона проекта REAPER',
             os.environ['appdata'],
             'RPP file (*.rpp)'
@@ -155,38 +157,49 @@ def start():
             save_path_to_config('project_path', project_path)
             form.lineEdit_2.setText(project_path)
         return project_path
-        
+
     form.pushButton_2.clicked.connect(project_folder)
 
-    #FX        
+    # FX
     def fx_folder():
         fx_chains_folder = load_path_from_config('fx_chains_folder')
-        fx_chains_folder = QtWidgets.QFileDialog.getExistingDirectory(None, 'Выбор FX', os.environ['appdata'])
+        fx_chains_folder = QtWidgets.QFileDialog.getExistingDirectory(
+            None,
+            'Выбор FX',
+            os.environ['appdata']
+        )
         if not fx_chains_folder:
             pass
         else:
             save_path_to_config('fx_chains_folder', fx_chains_folder)
             form.lineEdit.setText(fx_chains_folder)
         return fx_chains_folder
-        
+
     form.pushButton.clicked.connect(fx_folder)
 
-    #Рабочая папка
+    # Рабочая папка
     def choice_folder():
         set_file = load_path_from_config('folder_file')
         global folder
-        folder = QtWidgets.QFileDialog.getExistingDirectory(None, 'Рабочая папка', set_file)
+        folder = QtWidgets.QFileDialog.getExistingDirectory(
+            None,
+            'Рабочая папка',
+            set_file
+        )
         form.lineEdit_4.setText(folder)
     form.pushButton_4.clicked.connect(choice_folder)
 
-    #Настройка сохранение рабочей папки
+    # Настройка сохранение рабочей папки
     def setting_folder():
-        const_workfolder = QtWidgets.QFileDialog.getExistingDirectory(None, 'Рабочая папка')
+        const_workfolder = QtWidgets.QFileDialog.getExistingDirectory(
+            None,
+            'Рабочая папка'
+        )
         save_path_to_config('folder_file', const_workfolder)
-        
+
     form.pushButton_6.clicked.connect(setting_folder)
 
-    #считывание и расстановка чекбоксов
+    # считывание и расстановка чекбоксов
     config = get_config()
     form.checkBox.setChecked(bool(config['OPTIONS']['split']))
     form.checkBox_2.setChecked(bool(config['OPTIONS']['normalize']))
@@ -198,20 +211,30 @@ def start():
     form.checkBox_8.setChecked(bool(config['OPTIONS']['render_video']))
     form.checkBox_9.setChecked(bool(config['OPTIONS']['newfolder']))
 
-    def checkboxUI(param: str):       
+    def checkboxUI(param: str):
         config = get_config()
         check_reaper()
-        #если пользователь написал свои числа в задержу(для регулировки работы приложения), то принимаются его значения в sleep, если нет, то наши стандарт 1с
+        # если пользователь написал свои числа в задержу
+        # (для регулировки работы приложения),
+        # то принимаются его значения в sleep, если нет, то наши стандарт 1с
         if form.lineEdit_5.text():
             if form.lineEdit_5.text().replace(".", "", 1).isdigit():
-                if float(form.lineEdit_5.text()) < 11 :
-                    runtime = float(form.lineEdit_5.text()) 
+                if float(form.lineEdit_5.text()) < 11:
+                    runtime = float(form.lineEdit_5.text())
                     config['OPTIONS']['runtime'] = f'{runtime}'
                 else:
-                    QMessageBox.about(None, "Ошибка", "Задержка при открытии слишком большая(max. 10)")
-                    return       
+                    QMessageBox.about(
+                        None,
+                        "Ошибка",
+                        "Задержка при открытии слишком большая(max. 10)"
+                    )
+                    return
             else:
-                QMessageBox.about(None, "Ошибка", "В задержку можно ввести только число от 0 до 10")
+                QMessageBox.about(
+                    None,
+                    "Ошибка",
+                    "В задержку можно ввести только число от 0 до 10"
+                )
                 return
         else:
             config['OPTIONS']['runtime'] = ''
@@ -219,14 +242,21 @@ def start():
 
         if form.lineEdit_6.text():
             if form.lineEdit_6.text().replace(".", "", 1).isdigit():
-                if float(form.lineEdit_6.text()) < 11 :
+                if float(form.lineEdit_6.text()) < 11:
                     savetime = float(form.lineEdit_6.text())
                     config['OPTIONS']['savetime'] = f'{savetime}'
                 else:
-                    QMessageBox.about(None, "Ошибка", "Задержка при сохранении слишком большая(max. 10)")
-                    return       
-            else:
-                QMessageBox.about(None, "Ошибка", "В задержку можно ввести только число от 0 до 10")
+                    QMessageBox.about(
+                        None,
+                        "Ошибка",
+                        "Задержка при сохранении слишком большая(max. 10)"
+                    )
+                    return
+                QMessageBox.about(
+                    None,
+                    "Ошибка",
+                    "В задержку можно ввести только число от 0 до 10"
+                )
                 return
         else:
             config['OPTIONS']['savetime'] = ''
@@ -234,7 +264,7 @@ def start():
 
         if form.lineEdit_7.text():
             if form.lineEdit_7.text().replace(".", "", 1).isdigit():
-                if float(form.lineEdit_7.text()) < 11 :
+                if float(form.lineEdit_7.text()) < 11:
                     fxtime = float(form.lineEdit_7.text())
                     config['OPTIONS']['fxtime'] = f'{fxtime}'
                 else:
@@ -389,7 +419,7 @@ def start():
             localsub = f'{folder}/{s_number}.srt'
         else: 
             localsub = 'NotFound'
-        #localsub - путь к файлу сабов, videofolder - путь к видеофайлу 
+        #localsub - путь к файлу сабов, videofolder - путь к видеофайлу
 
         #нахождение неправильных форматов и переименовка
         if glob.glob(os.path.join(folder, '*.flac*')):
@@ -510,19 +540,16 @@ def start():
                     else:
                         config['OPTIONS']['volume'] = ' '
 
-        #Добавляем видео
+        # Добавляем видео
         RPR.InsertMedia(videofolder, (1 << 9) | 0)
 
         # Можно дать больше времени на работу сплита,
         # если уменьшить значение X_FILE
         # Значения пригодятся и в других функциях
-        X_FILE = 5
         video_item = RPR.GetMediaItem(0, 0)
         lenght = RPR.GetMediaItemInfo_Value(video_item, "D_LENGTH") / 60
-        sleep = lenght / X_FILE
         all_tracks = RPR.GetNumTracks()
         dub_tracks = all_tracks - 2
-        split_sleep = dub_tracks * sleep
 
         # Сплит
         if form.checkBox.isChecked():
@@ -567,15 +594,20 @@ def start():
                 RPR.Main_OnCommand(normalize_loudness, 0)
             else:
                 config['OPTIONS']['normalize_video'] = ' '
-        
-         # Добавляем сабы айтемы
+
+        # Добавляем сабы айтемы
         if form.checkBox_5.isChecked():
             config['OPTIONS']['sub_item'] = '1'
             if localsub == 'NotFound':
                 pass
             else:
                 keyboard.send('ctrl+t')
-                RPR.GetSetMediaTrackInfo_String(RPR.GetLastTouchedTrack(), 'P_NAME', 'СУБТИТРЫ', True)
+                RPR.GetSetMediaTrackInfo_String(
+                    RPR.GetLastTouchedTrack(),
+                    'P_NAME',
+                    'СУБТИТРЫ',
+                    True
+                )
                 keyboard.send('ctrl+0')
                 time.sleep(1)
                 fix_path = localsub.replace('/', '\\')
@@ -615,24 +647,35 @@ def start():
             config['OPTIONS']['render_video'] = '1'
             if glob.glob(os.path.join(new_folder, '*.flac')):
                 print('Я НАЧАЛ РЕНДЕРИТЬ ВИДОСИК')
-                command = f'ffmpeg -i {new_folder}/{s_number}.flac -ab 256k {new_folder}/coder{s_number}.aac'
+                command = (
+                    f'ffmpeg -i {new_folder}/{s_number}.flac -ab 256k '
+                    f'{new_folder}/coder{s_number}.aac'
+                )
                 subprocess.call(command, shell=True)
                 command = (
-                f'ffmpeg -i {videofolder} -i {new_folder}/coder{s_number}.aac -c copy '
-                f'-map 0:v:0 -map 1:a:0 {folder}/{videoname[0]}_DUB.mkv'
+                    f'ffmpeg -i {videofolder} -i '
+                    f'{new_folder}/coder{s_number}.aac -c copy '
+                    f'-map 0:v:0 -map 1:a:0 {folder}/{videoname[0]}_DUB.mkv'
                 )
                 subprocess.call(command, shell=True)
             elif glob.glob(os.path.join(new_folder, '*.wav')):
                 print('Я НАЧАЛ РЕНДЕРИТЬ ВИДОСИК')
-                command = f'ffmpeg -i {new_folder}/{s_number}.wav -ab 256k {new_folder}/coder{s_number}.aac'
+                command = (f'ffmpeg -i {new_folder}/{s_number}.wav -ab 256k '
+                           f'{new_folder}/coder{s_number}.aac'
+                           )
                 subprocess.call(command, shell=True)
                 command = (
-                f'ffmpeg -i {videofolder} -i {new_folder}/coder{s_number}.aac -c copy '
-                f'-map 0:v:0 -map 1:a:0 {folder}/{videoname[0]}_DUB.mkv'
+                    f'ffmpeg -i {videofolder} -i '
+                    f'{new_folder}/coder{s_number}.aac -c copy '
+                    f'-map 0:v:0 -map 1:a:0 {folder}/{videoname[0]}_DUB.mkv'
                 )
                 subprocess.call(command, shell=True)
-            else: 
-                QMessageBox.about(None, "Ошибка", "В рабочей папки нет аудио файла FLAC или WAV")
+            else:
+                QMessageBox.about(
+                    None,
+                    "Ошибка",
+                    "В рабочей папки нет аудио файла FLAC или WAV"
+                )
         else:
             config['OPTIONS']['render_video'] = ' '
 
@@ -641,8 +684,6 @@ def start():
 
     form.pushButton_5.clicked.connect(checkboxUI)
     app.exec()
-
-
 
 
 app = QtWidgets.QApplication(sys.argv)
