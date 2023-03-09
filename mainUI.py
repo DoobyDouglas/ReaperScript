@@ -5,6 +5,7 @@ import configparser
 import psutil
 import sys
 import os
+import reapy
 import keyboard
 import subprocess
 import time
@@ -27,6 +28,7 @@ OPTIONS = [
         'volume',
         'sub_item',
         'sub_region',
+        'fix_check',
         'render_audio',
         'render_video',
         'newfolder',
@@ -569,7 +571,7 @@ def start():
             keyboard.write(new_porject_path)
             keyboard.send('enter')
 
-        # project = reapy.Project() чекнуть потом
+        project = reapy.Project()
 
         # Добавляем аудио и FX к ним
         for file in flac_audio:
@@ -695,6 +697,86 @@ def start():
                 keyboard.send('enter')
         else:
             config['OPTIONS']['sub_item'] = ' '
+
+        if form.checkBox_#новый.isChecked():
+            config['OPTIONS']['fix_check'] = '1'    
+            track = RPR.GetTrack(0, 1)
+            subs_enum = RPR.CountTrackMediaItems(track)
+            items_enum = RPR.CountMediaItems(0)
+            subs_list = []
+            items_list = []
+            checked_subs_ids = []
+            previous_items_ids = []
+            for i in range(1, (subs_enum + 1)):
+                sub_item = RPR.GetMediaItem(0, i)
+                start_sub = RPR.GetMediaItemInfo_Value(
+                    sub_item,
+                    'D_POSITION'
+                )
+                end_sub = start_sub + RPR.GetMediaItemInfo_Value(
+                    sub_item,
+                    'D_LENGTH'
+                )
+                subs_list.append([start_sub, end_sub])
+            for i in range((subs_enum + 1), (items_enum + 1)):
+                item = RPR.GetMediaItem(0, i)
+                start_item = RPR.GetMediaItemInfo_Value(
+                    item,
+                    'D_POSITION'
+                )
+                end_item = start_item + RPR.GetMediaItemInfo_Value(
+                    item,
+                    'D_LENGTH'
+                )
+                items_list.append([start_item, end_item])
+            for s in subs_list:
+                for i in items_list:
+                    if i not in previous_items_ids:
+                        if i[0] >= s[0] and i[1] <= s[1]:
+                            previous_items_ids.append(i)
+                            checked_subs_ids.append(s)
+                            break
+                        elif i[0] <= s[0] and i[1] >= s[1]:
+                            previous_items_ids.append(i)
+                            checked_subs_ids.append(s)
+                            break
+                        elif i[0] < s[0] and (
+                                i[1] > s[0] and i[1] < s[1]
+                                ):
+                            previous_items_ids.append(i)
+                            checked_subs_ids.append(s)
+                            break
+                        elif i[0] > s[0] and (
+                                i[0] < s[1] and i[1] > s[1]
+                                ):
+                            previous_items_ids.append(i)
+                            checked_subs_ids.append(s)
+                            break
+            for s in subs_list:
+                if s not in checked_subs_ids:
+                    for i in previous_items_ids:
+                        if i[0] >= s[0] and i[1] <= s[1]:
+                            checked_subs_ids.append(s)
+                            break
+                        elif i[0] <= s[0] and i[1] >= s[1]:
+                            checked_subs_ids.append(s)
+                            break
+                        elif i[0] < s[0] and (
+                             i[1] > s[0] and i[1] < s[1]
+                                ):
+                            checked_subs_ids.append(s)
+                            break
+                        elif i[0] > s[0] and (
+                                i[0] < s[1] and i[1] > s[1]
+                                ):
+                            checked_subs_ids.append(s)
+                            break
+            for s in subs_list:
+                if s not in checked_subs_ids:
+                    project.add_marker(s[0])
+        else:
+            config['OPTIONS']['fix_check'] = ' ' 
+
 
         if form.checkBox_7.isChecked():
             config['OPTIONS']['render_audio'] = '1'
