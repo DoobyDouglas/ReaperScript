@@ -73,7 +73,7 @@ def create_widgets(
 
 def checkbox_window():
     master = tkinter.Tk()
-    master.geometry('450x250')
+    master.geometry('450x280')
     master.title('Выберите нужные опции')
     OPTIONS = [
         'split',
@@ -83,6 +83,7 @@ def checkbox_window():
         'volume_up_dubbers',
         'sub_item',
         'sub_region',
+        'fix_check',
         'render_audio',
         'render_video',
     ]
@@ -377,26 +378,29 @@ def audio_select(
 # Можно дать больше времени на работу сплита, если уменьшить значение X_FILE
 def get_info_values():
     """Функция для получения значений видео и сна"""
-    X_FILE = 5
     video_item = RPR.GetMediaItem(0, 0)
     lenght = RPR.GetMediaItemInfo_Value(video_item, "D_LENGTH") / 60
-    sleep = lenght / X_FILE
     all_tracks = RPR.GetNumTracks()
-    dub_tracks = all_tracks - 2
-    split_sleep = dub_tracks * sleep
-    return video_item, split_sleep, lenght
+    return video_item, all_tracks, lenght
 
 
 # Использует послендий пресет сплита
-def split(video_item, split_sleep):
+def split(video_item, all_tracks):
     """Функция для разделения дорог на айтемы"""
     value = get_value_from_config('split')
     if value == 'True':
         RPR.SetMediaItemSelected(video_item, False)
-        RPR.Main_OnCommand(40760, 0)
-        time.sleep(split_sleep)
+        pyautogui.hotkey('shift', 'a')
+        time.sleep(1)
         pyautogui.press('enter')
         time.sleep(1)
+        items_list = []
+        last_track = RPR.GetTrack(0, all_tracks - 1)
+        items = RPR.CountTrackMediaItems(last_track)
+        items_list.append(items)
+        while items == items_list[0]:
+            time.sleep(3)
+            items = RPR.CountTrackMediaItems(last_track)
     else:
         pass
 
@@ -447,6 +451,8 @@ def import_subs(subs: List[str]):
                     fix_path = subs[0].replace('/', '\\')
                     pyautogui.typewrite(fix_path)
                     pyautogui.press('enter')
+                    position = RPR.GetCursorPosition()
+                    RPR.MoveEditCursor(- position, False)
             except IndexError:
                 pass
     else:
@@ -477,6 +483,87 @@ def import_subs_items(subs: List[str]):
                     pyautogui.press('enter')
             except IndexError:
                 pass
+    else:
+        pass
+
+
+def fix_check(project: reapy.Project):
+    value = get_value_from_config('fix_check')
+    if value == 'True':
+        track = RPR.GetTrack(0, 1)
+        subs_enum = RPR.CountTrackMediaItems(track)
+        items_enum = RPR.CountMediaItems(0)
+        subs_list = []
+        items_list = []
+        checked_subs_ids = []
+        previous_items_ids = []
+        for i in range(1, (subs_enum + 1)):
+            sub_item = RPR.GetMediaItem(0, i)
+            start_sub = RPR.GetMediaItemInfo_Value(
+                sub_item,
+                'D_POSITION'
+            )
+            end_sub = start_sub + RPR.GetMediaItemInfo_Value(
+                sub_item,
+                'D_LENGTH'
+            )
+            subs_list.append([start_sub, end_sub])
+        for i in range((subs_enum + 1), (items_enum + 1)):
+            item = RPR.GetMediaItem(0, i)
+            start_item = RPR.GetMediaItemInfo_Value(
+                item,
+                'D_POSITION'
+            )
+            end_item = start_item + RPR.GetMediaItemInfo_Value(
+                item,
+                'D_LENGTH'
+            )
+            items_list.append([start_item, end_item])
+        for s in subs_list:
+            for i in items_list:
+                if i not in previous_items_ids:
+                    if i[0] >= s[0] and i[1] <= s[1]:
+                        previous_items_ids.append(i)
+                        checked_subs_ids.append(s)
+                        break
+                    elif i[0] <= s[0] and i[1] >= s[1]:
+                        previous_items_ids.append(i)
+                        checked_subs_ids.append(s)
+                        break
+                    elif i[0] < s[0] and (
+                            i[1] > s[0] and i[1] < s[1]
+                            ):
+                        previous_items_ids.append(i)
+                        checked_subs_ids.append(s)
+                        break
+                    elif i[0] > s[0] and (
+                            i[0] < s[1] and i[1] > s[1]
+                            ):
+                        previous_items_ids.append(i)
+                        checked_subs_ids.append(s)
+                        break
+        for s in subs_list:
+            if s not in checked_subs_ids:
+                for i in previous_items_ids:
+                    if i[0] >= s[0] and i[1] <= s[1]:
+                        checked_subs_ids.append(s)
+                        break
+                    elif i[0] <= s[0] and i[1] >= s[1]:
+                        checked_subs_ids.append(s)
+                        break
+                    elif i[0] < s[0] and (
+                            i[1] > s[0] and i[1] < s[1]
+                            ):
+                        checked_subs_ids.append(s)
+                        break
+                    elif i[0] > s[0] and (
+                            i[0] < s[1] and i[1] > s[1]
+                            ):
+                        checked_subs_ids.append(s)
+                        break
+        for s in subs_list:
+            if s not in checked_subs_ids:
+                project.add_marker(s[0])
     else:
         pass
 
@@ -580,10 +667,11 @@ def main():
     video_select(mkv_video, mp4_video)
     import_subs(subs)
     project.save(False)
-    video_item, split_sleep, lenght = get_info_values()
-    split(video_item, split_sleep)
+    video_item, all_tracks, lenght = get_info_values()
+    split(video_item, all_tracks)
     normalize(video_item)
     project.save(False)
+    fix_check(project)
     render(folder)
     reaper_close(lenght)
     audio_convert(folder)
