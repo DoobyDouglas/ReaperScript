@@ -635,15 +635,15 @@ def start():
         # Сплит
         if form.checkBox.isChecked():
             config['OPTIONS']['split'] = '1'
+            items_list = []
+            last_track = RPR.GetTrack(0, all_tracks - 1)
+            items = RPR.CountTrackMediaItems(last_track)
+            items_list.append(items)
             RPR.SetMediaItemSelected(video_item, False)
             keyboard.send('shift+a')
             time.sleep(1)
             keyboard.send('enter')
             time.sleep(1)
-            items_list = []
-            last_track = RPR.GetTrack(0, all_tracks - 1)
-            items = RPR.CountTrackMediaItems(last_track)
-            items_list.append(items)
             while items == items_list[0]:
                 time.sleep(3)
                 items = RPR.CountTrackMediaItems(last_track)
