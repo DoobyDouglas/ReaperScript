@@ -389,15 +389,15 @@ def split(video_item, all_tracks):
     """Функция для разделения дорог на айтемы"""
     value = get_value_from_config('split')
     if value == 'True':
+        items_list = []
+        last_track = RPR.GetTrack(0, all_tracks - 1)
+        items = RPR.CountTrackMediaItems(last_track)
+        items_list.append(items)
         RPR.SetMediaItemSelected(video_item, False)
         pyautogui.hotkey('shift', 'a')
         time.sleep(1)
         pyautogui.press('enter')
         time.sleep(1)
-        items_list = []
-        last_track = RPR.GetTrack(0, all_tracks - 1)
-        items = RPR.CountTrackMediaItems(last_track)
-        items_list.append(items)
         while items == items_list[0]:
             time.sleep(3)
             items = RPR.CountTrackMediaItems(last_track)
