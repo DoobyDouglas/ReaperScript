@@ -495,8 +495,8 @@ def fix_check(project: reapy.Project):
         items_enum = RPR.CountMediaItems(0)
         subs_list = []
         items_list = []
-        checked_subs_ids = []
-        previous_items_ids = []
+        checked_subs = []
+        dubbles_items = []
         for i in range(1, (subs_enum + 1)):
             sub_item = RPR.GetMediaItem(0, i)
             start_sub = RPR.GetMediaItemInfo_Value(
@@ -514,56 +514,41 @@ def fix_check(project: reapy.Project):
                 item,
                 'D_POSITION'
             )
-            end_item = start_item + RPR.GetMediaItemInfo_Value(
+            lenght = RPR.GetMediaItemInfo_Value(
                 item,
                 'D_LENGTH'
             )
-            items_list.append([start_item, end_item])
+            end_item = start_item + lenght
+            items_list.append([start_item, end_item, lenght])
         for s in subs_list:
             for i in items_list:
-                if i not in previous_items_ids:
-                    if i[0] >= s[0] and i[1] <= s[1]:
-                        previous_items_ids.append(i)
-                        checked_subs_ids.append(s)
-                        break
-                    elif i[0] <= s[0] and i[1] >= s[1]:
-                        previous_items_ids.append(i)
-                        checked_subs_ids.append(s)
-                        break
-                    elif i[0] < s[0] and (
-                            i[1] > s[0] and i[1] < s[1]
-                            ):
-                        previous_items_ids.append(i)
-                        checked_subs_ids.append(s)
-                        break
-                    elif i[0] > s[0] and (
-                            i[0] < s[1] and i[1] > s[1]
-                            ):
-                        previous_items_ids.append(i)
-                        checked_subs_ids.append(s)
-                        break
+                if i[0] >= s[0] and i[1] <= s[1]:
+                    checked_subs.append(s)
+                    break
+                elif i[0] <= s[0] and i[1] >= s[1]:
+                    checked_subs.append(s)
+                    break
+                elif i[0] < s[0] and (
+                        i[1] > s[0] and i[1] < s[1]
+                        ):
+                    checked_subs.append(s)
+                    break
+                elif i[0] > s[0] and (
+                        i[0] < s[1] and i[1] > s[1]
+                        ):
+                    checked_subs.append(s)
+                    break
+        for i in items_list:
+            if i not in dubbles_items:
+                middle = i[0] + (i[2] / 2)
+                for j in items_list:
+                    if j != i and j not in dubbles_items:
+                        if j[0] <= middle <= j[1]:
+                            project.add_marker(j[0], 'DUBBLE', (128, 255, 255))
+                            dubbles_items.append(j)
         for s in subs_list:
-            if s not in checked_subs_ids:
-                for i in previous_items_ids:
-                    if i[0] >= s[0] and i[1] <= s[1]:
-                        checked_subs_ids.append(s)
-                        break
-                    elif i[0] <= s[0] and i[1] >= s[1]:
-                        checked_subs_ids.append(s)
-                        break
-                    elif i[0] < s[0] and (
-                            i[1] > s[0] and i[1] < s[1]
-                            ):
-                        checked_subs_ids.append(s)
-                        break
-                    elif i[0] > s[0] and (
-                            i[0] < s[1] and i[1] > s[1]
-                            ):
-                        checked_subs_ids.append(s)
-                        break
-        for s in subs_list:
-            if s not in checked_subs_ids:
-                project.add_marker(s[0])
+            if s not in checked_subs:
+                project.add_marker(s[0], 'FIX', (255, 0, 255))
     else:
         pass
 
