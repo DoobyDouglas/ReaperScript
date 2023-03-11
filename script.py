@@ -126,6 +126,7 @@ def keyboard_check():
     """Функция для проверки раскладки клавиатуры"""
     current_layout = pwkl.get_foreground_window_keyboard_layout()
     if current_layout != 67699721:
+        tkinter.Tk().withdraw()
         pwkl.change_foreground_window_keyboard_layout(0x00000409)
         tkinter.messagebox.showinfo(
             'Неправильная раскладка',
