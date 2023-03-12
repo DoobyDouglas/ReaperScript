@@ -532,13 +532,13 @@ def fix_check(project: reapy.Project):
                 elif i[0] < s[0] and (
                         i[1] > s[0] and i[1] < s[1]
                         ):
-                    if i[1] - s[0] >= lenght / 2:
+                    if i[1] - s[0] >= lenght / 2.2:
                         checked_subs.append(s)
                         break
                 elif i[0] > s[0] and (
                         i[0] < s[1] and i[1] > s[1]
                         ):
-                    if s[1] - i[0] >= lenght / 2:
+                    if s[1] - i[0] >= lenght / 2.2:
                         checked_subs.append(s)
                         break
         for i in items_list:
