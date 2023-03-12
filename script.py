@@ -515,13 +515,13 @@ def fix_check(project: reapy.Project):
                 item,
                 'D_POSITION'
             )
-            lenght = RPR.GetMediaItemInfo_Value(
+            end_item = start_item + RPR.GetMediaItemInfo_Value(
                 item,
                 'D_LENGTH'
             )
-            end_item = start_item + lenght
-            items_list.append([start_item, end_item, lenght])
+            items_list.append([start_item, end_item])
         for s in subs_list:
+            lenght = s[1] - s[0]
             for i in items_list:
                 if i[0] >= s[0] and i[1] <= s[1]:
                     checked_subs.append(s)
@@ -532,16 +532,18 @@ def fix_check(project: reapy.Project):
                 elif i[0] < s[0] and (
                         i[1] > s[0] and i[1] < s[1]
                         ):
-                    checked_subs.append(s)
-                    break
+                    if i[1] - s[0] >= lenght / 2:
+                        checked_subs.append(s)
+                        break
                 elif i[0] > s[0] and (
                         i[0] < s[1] and i[1] > s[1]
                         ):
-                    checked_subs.append(s)
-                    break
+                    if s[1] - i[0] >= lenght / 2:
+                        checked_subs.append(s)
+                        break
         for i in items_list:
             if i not in dubbles_items:
-                middle = i[0] + (i[2] / 2)
+                middle = i[0] + ((i[1] - i[0]) / 2)
                 for j in items_list:
                     if j != i and j not in dubbles_items:
                         if j[0] <= middle <= j[1]:
@@ -637,9 +639,7 @@ def make_episode(
 # Чтобы Reaper API подгрузился он должен быть включен при запуске скрипта
 def main():
     """Основная функция"""
-    # tkinter.Tk().withdraw()
     keyboard_check()
-    # create_config()
     checkbox_window()
     tkinter.Tk().withdraw()
     reaper_check()
@@ -649,9 +649,9 @@ def main():
     project = reapy.Project()
     project_save(folder)
     import_subs_items(subs)
+    import_subs(subs)
     audio_select(flac_audio, wav_audio)
     video_select(mkv_video, mp4_video)
-    import_subs(subs)
     project.save(False)
     video_item, all_tracks, lenght = get_info_values()
     split(video_item, all_tracks)
