@@ -12,7 +12,7 @@ import time
 import glob
 import py_win_keyboard_layout as pwkl
 from reapy import reascript_api as RPR
-
+from fix_checker import fix_check
 
 PATHS = [
     'fx_chains_folder',
@@ -47,6 +47,9 @@ def get_config():
         config.add_section('PATHS')
         for path in PATHS:
             config.set('PATHS', path, '')
+        config.add_section('OPTIONS')
+        for option in OPTIONS:
+            config.set('OPTIONS', option, '')
         with open('config.ini', "w") as config_file:
             config.write(config_file)
     return config
@@ -200,6 +203,7 @@ def start():
         save_path_to_config('folder_file', const_workfolder)
 
     form.pushButton_6.clicked.connect(setting_folder)
+    form.pushButton_7.clicked.connect(fix_check)
 
     # считывание и расстановка чекбоксов
     config = get_config()
@@ -212,6 +216,8 @@ def start():
     form.checkBox_7.setChecked(bool(config['OPTIONS']['render_audio']))
     form.checkBox_8.setChecked(bool(config['OPTIONS']['render_video']))
     form.checkBox_9.setChecked(bool(config['OPTIONS']['newfolder']))
+    form.checkBox_10.setChecked(bool(config['OPTIONS']['changename']))
+    form.checkBox_11.setChecked(bool(config['OPTIONS']['fix_check']))
 
     def checkboxUI(param: str):
         config = get_config()
@@ -375,9 +381,12 @@ def start():
                 return
             videoname = ''.join(([_ for _ in os.listdir(folder) if _.endswith(fileExtMp4)]))
             if form.checkBox_10.isChecked():
+                config['OPTIONS']['changename'] = '1'
                 title = folder.split('/')[-2]
                 os.rename(folder + "/" + videoname, folder + '/' + title + '_' + videoname)
                 videoname = ''.join(([_ for _ in os.listdir(folder) if _.endswith(fileExtMp4)]))
+            else:
+                config['OPTIONS']['changename'] = ' '
             videofolder = f'{folder}/{videoname}'
 
             if glob.glob(os.path.join(folder, '*.srt')):
@@ -417,9 +426,12 @@ def start():
                 return
             videoname = ''.join(([_ for _ in os.listdir(folder) if _.endswith(fileExtMkv)]))
             if form.checkBox_10.isChecked():
+                config['OPTIONS']['changename'] = '1'
                 title = folder.split('/')[-2]
                 os.rename(folder + "/" + videoname, folder + '/' + title + '_' + videoname)
                 videoname = ''.join(([_ for _ in os.listdir(folder) if _.endswith(fileExtMkv)]))
+            else:
+                config['OPTIONS']['changename'] = ' '
             videofolder = f'{folder}/{videoname}'
 
             if glob.glob(os.path.join(folder, '*.srt')):  # нахождение SRT
@@ -608,6 +620,27 @@ def start():
         # Добавляем видео
         RPR.InsertMedia(videofolder, (1 << 9) | 0)
 
+        # Добавляем сабы айтемы
+        if form.checkBox_5.isChecked():
+            config['OPTIONS']['sub_item'] = '1'
+            if localsub == 'NotFound':
+                pass
+            else:
+                keyboard.send('ctrl+t')
+                RPR.GetSetMediaTrackInfo_String(
+                    RPR.GetLastTouchedTrack(),
+                    'P_NAME',
+                    'СУБТИТРЫ',
+                    True
+                )
+                keyboard.send('ctrl+0')
+                time.sleep(1)
+                fix_path = localsub.replace('/', '\\')
+                keyboard.write(fix_path)
+                keyboard.send('enter')
+        else:
+            config['OPTIONS']['sub_item'] = ' '
+
         # Добавляем сабы регионы
         if form.checkBox_6.isChecked():
             config['OPTIONS']['sub_region'] = '1'
@@ -624,9 +657,6 @@ def start():
         else:
             config['OPTIONS']['sub_region'] = ' '
 
-        # Можно дать больше времени на работу сплита,
-        # если уменьшить значение X_FILE
-        # Значения пригодятся и в других функциях
         video_item = RPR.GetMediaItem(0, 0)
         # lenght = RPR.GetMediaItemInfo_Value(video_item, "D_LENGTH") / 60
         # пока не нужно, но для функции рендера
@@ -639,6 +669,7 @@ def start():
             last_track = RPR.GetTrack(0, all_tracks - 1)
             items = RPR.CountTrackMediaItems(last_track)
             items_list.append(items)
+            RPR.SelectAllMediaItems(0, True)
             RPR.SetMediaItemSelected(video_item, False)
             keyboard.send('shift+a')
             time.sleep(1)
@@ -677,29 +708,8 @@ def start():
             else:
                 config['OPTIONS']['normalize_video'] = ' '
 
-        # Добавляем сабы айтемы
-        if form.checkBox_5.isChecked():
-            config['OPTIONS']['sub_item'] = '1'
-            if localsub == 'NotFound':
-                pass
-            else:
-                keyboard.send('ctrl+t')
-                RPR.GetSetMediaTrackInfo_String(
-                    RPR.GetLastTouchedTrack(),
-                    'P_NAME',
-                    'СУБТИТРЫ',
-                    True
-                )
-                keyboard.send('ctrl+0')
-                time.sleep(1)
-                fix_path = localsub.replace('/', '\\')
-                keyboard.write(fix_path)
-                keyboard.send('enter')
-        else:
-            config['OPTIONS']['sub_item'] = ' '
-
-        if form.checkBox_#новый.isChecked():
-            config['OPTIONS']['fix_check'] = '1'    
+        if form.checkBox_11.isChecked():
+            config['OPTIONS']['fix_check'] = '1'
             track = RPR.GetTrack(0, 1)
             subs_enum = RPR.CountTrackMediaItems(track)
             items_enum = RPR.CountMediaItems(0)
@@ -773,8 +783,7 @@ def start():
                 if s not in checked_subs:
                     project.add_marker(s[0], 'FIX', (255, 0, 255))
         else:
-            config['OPTIONS']['fix_check'] = ' ' 
-
+            config['OPTIONS']['fix_check'] = ' '
 
         if form.checkBox_7.isChecked():
             config['OPTIONS']['render_audio'] = '1'

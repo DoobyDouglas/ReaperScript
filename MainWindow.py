@@ -46,7 +46,7 @@ class Ui_MainWindow(object):
 "}")
         self.pushButton_5.setObjectName("pushButton_5")
         self.pushButton_6 = QtWidgets.QPushButton(self.centralwidget)
-        self.pushButton_6.setGeometry(QtCore.QRect(10, 630, 141, 51))
+        self.pushButton_6.setGeometry(QtCore.QRect(10, 630, 81, 51))
         self.pushButton_6.setStyleSheet("QPushButton {\n"
 "  background-color: rgb(42, 42, 42);\n"
 "  border-radius: 15px;\n"
@@ -63,7 +63,7 @@ class Ui_MainWindow(object):
 "}")
         self.pushButton_6.setObjectName("pushButton_6")
         self.frame = QtWidgets.QFrame(self.centralwidget)
-        self.frame.setGeometry(QtCore.QRect(20, 170, 581, 161))
+        self.frame.setGeometry(QtCore.QRect(20, 170, 581, 191))
         font = QtGui.QFont()
         font.setPointSize(11)
         self.frame.setFont(font)
@@ -154,8 +154,16 @@ class Ui_MainWindow(object):
         self.checkBox_6.setStyleSheet("background: rgba(0, 0, 0, 0);\n"
 "color: white")
         self.checkBox_6.setObjectName("checkBox_6")
+        self.checkBox_11 = QtWidgets.QCheckBox(self.frame)
+        self.checkBox_11.setGeometry(QtCore.QRect(10, 160, 221, 21))
+        font = QtGui.QFont()
+        font.setPointSize(11)
+        self.checkBox_11.setFont(font)
+        self.checkBox_11.setStyleSheet("background: rgba(0, 0, 0, 0);\n"
+"color: white")
+        self.checkBox_11.setObjectName("checkBox_11")
         self.frame_2 = QtWidgets.QFrame(self.centralwidget)
-        self.frame_2.setGeometry(QtCore.QRect(180, 630, 261, 51))
+        self.frame_2.setGeometry(QtCore.QRect(190, 630, 251, 51))
         self.frame_2.setStyleSheet("color:white;\n"
 "background: rgba(0, 0, 0, 100);\n"
 "border-radius: 20px;")
@@ -163,7 +171,7 @@ class Ui_MainWindow(object):
         self.frame_2.setFrameShadow(QtWidgets.QFrame.Raised)
         self.frame_2.setObjectName("frame_2")
         self.label_7 = QtWidgets.QLabel(self.frame_2)
-        self.label_7.setGeometry(QtCore.QRect(190, 10, 61, 31))
+        self.label_7.setGeometry(QtCore.QRect(180, 10, 61, 31))
         font = QtGui.QFont()
         font.setPointSize(11)
         font.setBold(True)
@@ -182,9 +190,6 @@ class Ui_MainWindow(object):
         self.label_6.setStyleSheet("background-color:black;\n"
 "padding:5px")
         self.label_6.setObjectName("label_6")
-        self.label_5 = QtWidgets.QLabel(self.frame_2)
-        self.label_5.setGeometry(QtCore.QRect(150, 20, 21, 16))
-        self.label_5.setObjectName("label_5")
         self.frame_3 = QtWidgets.QFrame(self.centralwidget)
         self.frame_3.setGeometry(QtCore.QRect(20, 30, 581, 141))
         self.frame_3.setStyleSheet("background: rgba(0, 0, 0, 100);\n"
@@ -203,19 +208,15 @@ class Ui_MainWindow(object):
         self.label_2 = QtWidgets.QLabel(self.frame_3)
         self.label_2.setGeometry(QtCore.QRect(290, 10, 131, 16))
         self.label_2.setObjectName("label_2")
-        self.label_2.setStyleSheet("background: rgba(0, 0, 0, 0)")
         self.label_3 = QtWidgets.QLabel(self.frame_3)
         self.label_3.setGeometry(QtCore.QRect(10, 70, 131, 16))
         self.label_3.setObjectName("label_3")
-        self.label_3.setStyleSheet("background: rgba(0, 0, 0, 0)")
         self.label = QtWidgets.QLabel(self.frame_3)
         self.label.setGeometry(QtCore.QRect(10, 10, 131, 16))
         self.label.setObjectName("label")
-        self.label.setStyleSheet("background: rgba(0, 0, 0, 0)")
         self.label_4 = QtWidgets.QLabel(self.frame_3)
         self.label_4.setGeometry(QtCore.QRect(290, 70, 131, 16))
         self.label_4.setObjectName("label_4")
-        self.label_4.setStyleSheet("background: rgba(0, 0, 0, 0)")
         self.lineEdit_2 = QtWidgets.QLineEdit(self.frame_3)
         self.lineEdit_2.setGeometry(QtCore.QRect(290, 30, 181, 20))
         self.lineEdit_2.setStyleSheet("color:white;\n"
@@ -274,7 +275,7 @@ class Ui_MainWindow(object):
         self.lineEdit.setReadOnly(True)
         self.lineEdit.setObjectName("lineEdit")
         self.frame_4 = QtWidgets.QFrame(self.centralwidget)
-        self.frame_4.setGeometry(QtCore.QRect(300, 330, 301, 111))
+        self.frame_4.setGeometry(QtCore.QRect(300, 360, 301, 111))
         self.frame_4.setStyleSheet("background: rgba(0, 0, 0, 100);\n"
 "border-radius: 0px 0px 20px 20px")
         self.frame_4.setFrameShape(QtWidgets.QFrame.StyledPanel)
@@ -307,19 +308,30 @@ class Ui_MainWindow(object):
         self.lineEdit_7.setInputMask("")
         self.lineEdit_7.setDragEnabled(False)
         self.lineEdit_7.setObjectName("lineEdit_7")
-        self.label_8 = QtWidgets.QLabel(self.centralwidget)
-        self.label_8.setGeometry(QtCore.QRect(-1230, -10, 1881, 731))
-        self.label_8.setStyleSheet("")
-        self.label_8.setText("")
-        self.label_8.setPixmap(QtGui.QPixmap(":/newPrefix/back1.jpg"))
-        self.label_8.setObjectName("label_8")
-        self.label_8.raise_()
+        self.pushButton_7 = QtWidgets.QPushButton(self.centralwidget)
+        self.pushButton_7.setGeometry(QtCore.QRect(100, 630, 81, 51))
+        self.pushButton_7.setStyleSheet("QPushButton {\n"
+"  background-color: rgb(42, 42, 42);\n"
+"  border-radius: 15px;\n"
+"  color: #FFFFFF;\n"
+"  font-size: 14px;\n"
+"  line-height: normal;\n"
+"  margin: 0;\n"
+"  text-align: center;\n"
+"}\n"
+"\n"
+"QPushButton:hover {\n"
+"    background:rgb(71, 71, 71);\n"
+"    border:0px;\n"
+"}")
+        self.pushButton_7.setObjectName("pushButton_7")
         self.pushButton_5.raise_()
         self.pushButton_6.raise_()
         self.frame_2.raise_()
         self.frame_3.raise_()
         self.frame_4.raise_()
         self.frame.raise_()
+        self.pushButton_7.raise_()
         MainWindow.setCentralWidget(self.centralwidget)
 
         self.retranslateUi(MainWindow)
@@ -340,9 +352,9 @@ class Ui_MainWindow(object):
         self.checkBox_8.setText(_translate("MainWindow", "Рендер видео (сразу)"))
         self.checkBox_5.setText(_translate("MainWindow", "Добавление субтитров Item"))
         self.checkBox_6.setText(_translate("MainWindow", "Добавление субтитров Region"))
+        self.checkBox_11.setText(_translate("MainWindow", "Проверка на Fix и Dubl"))
         self.label_7.setText(_translate("MainWindow", "KOT3"))
         self.label_6.setText(_translate("MainWindow", "Dooby Duglas"))
-        self.label_5.setText(_translate("MainWindow", "and"))
         self.pushButton_3.setText(_translate("MainWindow", "Выбрать"))
         self.label_2.setText(_translate("MainWindow", "Путь к шаблону проекта"))
         self.label_3.setText(_translate("MainWindow", "Путь к Reaper"))
@@ -353,15 +365,6 @@ class Ui_MainWindow(object):
         self.pushButton_2.setText(_translate("MainWindow", "Выбрать"))
         self.lineEdit_5.setPlaceholderText(_translate("MainWindow", "Задержка при открытии (def = 1s)"))
         self.lineEdit_6.setPlaceholderText(_translate("MainWindow", "Задержка при сохранении (def = 1s)"))
-        self.lineEdit_7.setPlaceholderText(_translate("MainWindow", "Задержка при добавлении FX (def = 0.5s)"))
+        self.lineEdit_7.setPlaceholderText(_translate("MainWindow", "Задержка при добавлении FX (def = 1s)"))
+        self.pushButton_7.setText(_translate("MainWindow", "CheckFix"))
 import resursec_rc
-
-
-if __name__ == "__main__":
-    import sys
-    app = QtWidgets.QApplication(sys.argv)
-    MainWindow = QtWidgets.QMainWindow()
-    ui = Ui_MainWindow()
-    ui.setupUi(MainWindow)
-    MainWindow.show()
-    sys.exit(app.exec_())
