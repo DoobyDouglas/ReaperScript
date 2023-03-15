@@ -1,6 +1,8 @@
 # Команду ниже нужно ввести один раз в консоли с включенным Reaper.
 # python -c "import reapy; reapy.configure_reaper()"
 
+import pysubs2
+import re
 import subprocess
 import time
 import os
@@ -243,6 +245,20 @@ def flac_rename(folder: str, flac_audio: List[str]):
     return fixed_flac
 
 
+def srt_subs_edit(subs: List[str]):
+    srt_subs = pysubs2.load(subs[0])
+    pattern_1 = r'\((.*?)\)'
+    pattern_2 = r'\[.*?]$'
+    to_delete = [
+        i for i, line in enumerate(srt_subs) if re.match(pattern_1, line.text)
+        or re.match(pattern_2, line.text)
+    ]
+    for i in reversed(to_delete):
+        del srt_subs[i]
+
+    srt_subs.save(subs[0])
+
+
 def file_works(folder: str):
     """Функция для подготовки файлов к работе"""
     flac_audio = get_path_to_files(folder, '*.flac*')
@@ -258,6 +274,7 @@ def file_works(folder: str):
     subs = get_path_to_files(folder, '*.srt')
     if subs:
         subs = subs_rename(folder, subs)
+        srt_subs_edit(subs)
     else:
         ass_subs = get_path_to_files(folder, '*.ass')
         if not ass_subs:
@@ -272,12 +289,14 @@ def file_works(folder: str):
         srt_subs = get_path_to_files(folder, '*.srt')
         if srt_subs:
             subs = subs_rename(folder, srt_subs)
+            srt_subs_edit(subs)
         else:
             try:
                 if mkv_video:
                     subs_extract(folder, mkv_video, 'srt')
                     subs = get_path_to_files(folder, '*.srt')
                     subs = subs_rename(folder, subs)
+                    srt_subs_edit(subs)
             except IndexError:
                 pass
     return flac_audio, wav_audio, mkv_video, mp4_video, subs
