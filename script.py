@@ -417,9 +417,8 @@ def split(video_item, all_tracks):
         pyautogui.hotkey('shift', 'a')
         time.sleep(1)
         pyautogui.press('enter')
-        time.sleep(1)
         while items == items_list[0]:
-            time.sleep(6)
+            time.sleep(9)
             items = RPR.CountTrackMediaItems(last_track)
     else:
         pass
