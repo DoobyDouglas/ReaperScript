@@ -13,9 +13,11 @@ import reapy
 import tkinter
 import tkinter.messagebox
 import py_win_keyboard_layout as pwkl
+import multiprocessing as mp
 from typing import List
 from reapy import reascript_api as RPR
 from tkinter import filedialog
+from multiprocessing import freeze_support
 
 
 def get_config():
@@ -187,10 +189,10 @@ def subs_rename(folder: str, subs: List[str]):
 def subs_extract(folder: str, mkv_video: List[str], param: str):
     """Функция для извлечения субтитров из видео"""
     if param == 'ass':
-        command = f'ffmpeg -i {mkv_video[0]} {folder}/subs.ass'
+        command = f'ffmpeg -i "{mkv_video[0]}" "{folder}/subs.ass"'
         subprocess.call(command, shell=True)
     if param == 'srt':
-        command = f'ffmpeg -i {mkv_video[0]} {folder}/subs.srt'
+        command = f'ffmpeg -i "{mkv_video[0]}" "{folder}/subs.srt"'
         subprocess.call(command, shell=True)
 
 
@@ -207,7 +209,7 @@ def vtt_sub_convert(folder: str, subs: List[str]):
     filename = os.path.splitext(subs[0])[0].split('\\')[-2]
     os.rename(subs[0], filename + '/' + 'subs.vtt')
     subs = get_path_to_files(folder, '*.vtt')
-    command = f'ffmpeg -i {subs[0]} {folder}/subs.srt'
+    command = f'ffmpeg -i "{subs[0]}" "{folder}/subs.srt"'
     subprocess.call(command, shell=True)
 
 
@@ -249,9 +251,13 @@ def srt_subs_edit(subs: List[str]):
     srt_subs = pysubs2.load(subs[0])
     pattern_1 = r'\((.*?)\)'
     pattern_2 = r'\[.*?]$'
+    pattern_3 = '♫'
+    pattern_4 = '♪'
     to_delete = [
         i for i, line in enumerate(srt_subs) if re.match(pattern_1, line.text)
         or re.match(pattern_2, line.text)
+        or pattern_3 in line.text
+        or pattern_4 in line.text
     ]
     for i in reversed(to_delete):
         del srt_subs[i]
@@ -399,9 +405,9 @@ def audio_select(
 def get_info_values():
     """Функция для получения значений видео и сна"""
     video_item = RPR.GetMediaItem(0, 0)
-    lenght = RPR.GetMediaItemInfo_Value(video_item, "D_LENGTH") / 60
+    # lenght = RPR.GetMediaItemInfo_Value(video_item, "D_LENGTH") / 60
     all_tracks = RPR.GetNumTracks()
-    return video_item, all_tracks, lenght
+    return video_item, all_tracks  # lenght
 
 
 # Использует послендий пресет сплита
@@ -506,6 +512,22 @@ def import_subs_items(subs: List[str]):
         pass
 
 
+def list_generator(position, strt_idx, end_idx, list, queue):
+    for i in range(strt_idx, end_idx):
+        item = RPR.GetMediaItem(0, i)
+        start = RPR.GetMediaItemInfo_Value(
+            item,
+            'D_POSITION'
+        )
+        end = start + RPR.GetMediaItemInfo_Value(
+            item,
+            'D_LENGTH'
+        )
+        list[position] = [start, end]
+        position += 1
+    queue.put(list)
+
+
 def fix_check(project: reapy.Project):
     value = get_value_from_config('fix_check')
     if value == 'True':
@@ -514,35 +536,25 @@ def fix_check(project: reapy.Project):
         items_enum = RPR.CountMediaItems(0)
         subs_list = [[float] * 2] * subs_enum
         items_list = [[float] * 2] * (items_enum - subs_enum)
+        queue_subs = mp.Queue()
+        queue_items = mp.Queue()
         checked_subs = []
         dubbles_items = []
-        position = 0
-        for i in range(1, (subs_enum + 1)):
-            sub_item = RPR.GetMediaItem(0, i)
-            start_sub = RPR.GetMediaItemInfo_Value(
-                sub_item,
-                'D_POSITION'
-            )
-            end_sub = start_sub + RPR.GetMediaItemInfo_Value(
-                sub_item,
-                'D_LENGTH'
-            )
-            subs_list[position] = [start_sub, end_sub]
-            position += 1
-
-        position = 0
-        for i in range((subs_enum + 1), (items_enum + 1)):
-            item = RPR.GetMediaItem(0, i)
-            start_item = RPR.GetMediaItemInfo_Value(
-                item,
-                'D_POSITION'
-            )
-            end_item = start_item + RPR.GetMediaItemInfo_Value(
-                item,
-                'D_LENGTH'
-            )
-            items_list[position] = [start_item, end_item]
-            position += 1
+        subs_list_gen = mp.Process(
+            target=list_generator,
+            args=(0, 1, (subs_enum + 1), subs_list, queue_subs)
+        )
+        items_list_gen = mp.Process(
+            target=list_generator,
+            args=(0, (subs_enum + 1), (items_enum + 1),
+                  items_list, queue_items)
+        )
+        subs_list_gen.start()
+        items_list_gen.start()
+        subs_list = queue_subs.get()
+        items_list = queue_items.get()
+        subs_list_gen.join()
+        items_list_gen.join()
         for s in subs_list:
             lenght = s[1] - s[0]
             for i in items_list:
@@ -618,13 +630,23 @@ def render(folder: str):
 
 
 # Можно дать больше времени на рендер, если уменьшить значение X_FILE
-def reaper_close(lenght: float):
+def reaper_close(folder: str):
     """Функция для закрытия REAPER"""
     value = get_value_from_config('render_audio')
     if value == 'True':
-        X_FILE = 0.13
-        sleep = lenght / X_FILE
-        time.sleep(sleep)
+        # X_FILE = 0.13
+        # sleep = lenght / X_FILE
+        # time.sleep(sleep)
+        time.sleep(3)
+        audio = f'{folder}/audio.wav'
+        old_file_size = os.path.getsize(audio)
+        time.sleep(3)
+        new_file_size = os.path.getsize(audio)
+        while old_file_size < new_file_size:
+            old_file_size = os.path.getsize(audio)
+            time.sleep(3)
+            new_file_size = os.path.getsize(audio)
+        time.sleep(3)
         pyautogui.hotkey('ctrl', 'q')
         time.sleep(1)
         pyautogui.press('enter')
@@ -635,7 +657,9 @@ def reaper_close(lenght: float):
 def audio_convert(folder: str):
     value = get_value_from_config('render_video')
     if value == 'True':
-        command = f'ffmpeg -i {folder}/audio.wav -ab 256k {folder}/audio.aac'
+        command = (
+            f'ffmpeg -i "{folder}/audio.wav" -ab 256k "{folder}/audio.aac"'
+        )
         subprocess.call(command, shell=True)
     else:
         pass
@@ -652,14 +676,14 @@ def make_episode(
         s_number = os.path.basename(folder)
         if mkv_video:
             command = (
-                f'ffmpeg -i {mkv_video[0]} -i {folder}/audio.aac -c copy '
-                f'-map 0:v:0 -map 1:a:0 {folder}/{title}_{s_number}_DUB.mkv'
+                f'ffmpeg -i "{mkv_video[0]}" -i "{folder}/audio.aac" -c copy '
+                f'-map 0:v:0 -map 1:a:0 "{folder}/{title}_{s_number}_DUB.mkv"'
             )
             subprocess.call(command, shell=True)
         if mp4_video:
             command = (
-                f'ffmpeg -i {mp4_video[0]} -i {folder}/audio.aac -c copy '
-                f'-map 0:v:0 -map 1:a:0 {folder}/{title}_{s_number}_DUB.mp4'
+                f'ffmpeg -i "{mp4_video[0]}" -i "{folder}/audio.aac" -c copy '
+                f'-map 0:v:0 -map 1:a:0 "{folder}/{title}_{s_number}_DUB.mp4"'
             )
             subprocess.call(command, shell=True)
     else:
@@ -669,6 +693,7 @@ def make_episode(
 # Чтобы Reaper API подгрузился он должен быть включен при запуске скрипта
 def main():
     """Основная функция"""
+    freeze_support()
     keyboard_check()
     checkbox_window()
     tkinter.Tk().withdraw()
@@ -683,13 +708,13 @@ def main():
     audio_select(flac_audio, wav_audio)
     video_select(mkv_video, mp4_video)
     project.save(False)
-    video_item, all_tracks, lenght = get_info_values()
+    video_item, all_tracks = get_info_values()
     split(video_item, all_tracks)
     normalize(video_item)
     project.save(False)
     fix_check(project)
     render(folder)
-    reaper_close(lenght)
+    reaper_close(folder)
     audio_convert(folder)
     make_episode(folder, mkv_video, mp4_video)
 
