@@ -18,6 +18,7 @@ from typing import List
 from reapy import reascript_api as RPR
 from tkinter import filedialog
 from multiprocessing import freeze_support
+from PIL import Image, ImageTk
 
 
 def get_config():
@@ -34,12 +35,11 @@ def save_options(
     save_button = tkinter.Button(
         master,
         text='Сохранить',
+        background='#9b93b3',
+        activebackground='#9b93b3',
         command=master.destroy
     )
-    save_button.grid(
-        row=len(checkboxes),
-        column=0
-    )
+    save_button.place(relx=0.5, rely=1.0, anchor="s", y=-9)
     master.mainloop()
     for option, var in checkboxes.items():
         config['OPTIONS'][option] = str(var.get())
@@ -64,7 +64,11 @@ def create_widgets(
         checkbox = tkinter.Checkbutton(
             master,
             text=option,
-            variable=var
+            variable=var,
+            background='#ffc0cb',
+            bd=3,
+            pady=3,
+            activebackground='#ffc0cb'
         )
         checkbox.grid(
             row=i,
@@ -77,8 +81,13 @@ def create_widgets(
 
 def checkbox_window():
     master = tkinter.Tk()
-    master.geometry('450x280')
+    master.geometry('380x350')
+    master.resizable(width=False, height=False)
     master.title('Выберите нужные опции')
+    img = Image.open("background.png")
+    tk_img = ImageTk.PhotoImage(img)
+    background_label = tkinter.Label(master, image=tk_img)
+    background_label.place(x=0, y=0, relwidth=1, relheight=1)
     OPTIONS = [
         'split',
         'normalize',

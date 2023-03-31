@@ -21,7 +21,6 @@ def list_generator(position, strt_idx, end_idx, list, queue):
 
 
 def fix_check():
-    start = datetime.datetime.now()
     project = reapy.Project()
     track = RPR.GetTrack(0, 1)
     subs_enum = RPR.CountTrackMediaItems(track)
@@ -85,8 +84,6 @@ def fix_check():
     for s in subs_list:
         if s not in checked_subs:
             project.add_marker(s[0], 'FIX', (255, 0, 255))
-    finish = datetime.datetime.now()
-    print(finish - start)
 
 
 if __name__ == '__main__':
