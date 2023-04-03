@@ -1,6 +1,8 @@
 # Команду ниже нужно ввести один раз в консоли с включенным Reaper.
 # python -c "import reapy; reapy.configure_reaper()"
 
+import pyperclip
+import keyboard
 import pysubs2
 import re
 import subprocess
@@ -483,8 +485,10 @@ def import_subs(subs: List[str]):
                     pyautogui.press('i')
                     time.sleep(1)
                     fix_path = subs[0].replace('/', '\\')
-                    pyautogui.typewrite(fix_path)
-                    pyautogui.press('enter')
+                    pyperclip.copy(fix_path)
+                    keyboard.press_and_release('ctrl+v')
+                    time.sleep(0.5)
+                    keyboard.press('enter')
                     position = RPR.GetCursorPosition()
                     RPR.MoveEditCursor(- position, False)
             except IndexError:
@@ -513,8 +517,10 @@ def import_subs_items(subs: List[str]):
                     pyautogui.press('/')
                     time.sleep(1)
                     fix_path = subs[0].replace('/', '\\')
-                    pyautogui.typewrite(fix_path)
-                    pyautogui.press('enter')
+                    pyperclip.copy(fix_path)
+                    keyboard.press_and_release('ctrl+v')
+                    time.sleep(0.5)
+                    keyboard.press('enter')
             except IndexError:
                 pass
     else:
@@ -614,10 +620,12 @@ def project_save(folder: str):
     title = folder.split('/')[-2]
     project_name = f'{title} {s_number}'
     new_porject_path = folder.replace('/', '\\') + '\\' + f'{project_name}'
+    pyperclip.copy(new_porject_path)
     pyautogui.hotkey('ctrl', 'alt', 's')
     time.sleep(1)
-    pyautogui.typewrite(new_porject_path)
-    pyautogui.press('enter')
+    keyboard.press_and_release('ctrl+v')
+    time.sleep(0.5)
+    keyboard.press('enter')
 
 
 # Используется последний пресет рендера
@@ -629,11 +637,13 @@ def render(folder: str):
         time.sleep(1)
         pyautogui.typewrite('audio')
         time.sleep(1)
-        for i in range(34):
+        for _ in range(34):
             pyautogui.press('tab')
         render_path = folder.replace('/', '\\') + '\\'
-        pyautogui.typewrite(render_path)
-        pyautogui.press('enter')
+        pyperclip.copy(render_path)
+        keyboard.press_and_release('ctrl+v')
+        time.sleep(0.5)
+        keyboard.press('enter')
     else:
         pass
 
