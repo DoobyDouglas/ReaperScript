@@ -419,7 +419,7 @@ def split(video_item: str, all_tracks: int) -> None:
         items = RPR.CountTrackMediaItems(last_track)
         items_list.append(items)
         RPR.SetMediaItemSelected(video_item, False)
-        keyboard.press_and_release('ctrl+9')
+        keyboard.send('ctrl+9')
         time.sleep(1)
         keyboard.send('enter')
         while items == items_list[0]:
@@ -495,7 +495,7 @@ def import_subs_items(subs: List[str]) -> None:
         else:
             try:
                 if subs[0]:
-                    keyboard.press_and_release('ctrl+0')
+                    keyboard.send('ctrl+0')
                     time.sleep(1)
                     fix_path = subs[0].replace('/', '\\')
                     pyperclip.copy(fix_path)
@@ -605,7 +605,7 @@ def project_save(folder: str) -> None:
     project_name = f'{title} {s_number}'
     new_porject_path = folder.replace('/', '\\') + '\\' + f'{project_name}'
     pyperclip.copy(new_porject_path)
-    keyboard.press_and_release('ctrl+alt+s')
+    keyboard.send('ctrl+alt+s')
     time.sleep(1)
     keyboard.press_and_release('ctrl+v')
     time.sleep(0.5)
