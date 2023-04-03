@@ -9,21 +9,21 @@ import subprocess
 import time
 import os
 import glob
-import pyautogui
 import configparser
 import reapy
 import tkinter
 import tkinter.messagebox
 import py_win_keyboard_layout as pwkl
 import multiprocessing as mp
-from typing import List
+from typing import List, Tuple
 from reapy import reascript_api as RPR
 from tkinter import filedialog
 from multiprocessing import freeze_support
 from PIL import Image, ImageTk
 
 
-def get_config():
+def get_config() -> configparser.ConfigParser:
+    """Функция для создания/получения файла конфигураций"""
     config = configparser.ConfigParser()
     config.read('config.ini')
     return config
@@ -33,7 +33,8 @@ def save_options(
         checkboxes: dict,
         master: tkinter.Tk,
         config: configparser.ConfigParser
-        ):
+        ) -> None:
+    """Функция для сохранения конфигураций"""
     save_button = tkinter.Button(
         master,
         text='Сохранить',
@@ -53,7 +54,8 @@ def create_widgets(
         OPTIONS: list,
         master: tkinter.Tk,
         config: configparser.ConfigParser
-        ):
+        ) -> dict:
+    """Функция для создания списка конфигураций"""
     checkboxes = {}
     if 'OPTIONS' not in config:
         config['OPTIONS'] = {}
@@ -81,7 +83,8 @@ def create_widgets(
     return checkboxes
 
 
-def checkbox_window():
+def checkbox_window() -> None:
+    """Функция для создания окна выбора конфигураций"""
     master = tkinter.Tk()
     master.geometry('380x350')
     master.resizable(width=False, height=False)
@@ -107,7 +110,7 @@ def checkbox_window():
     save_options(checkboxes, master, config)
 
 
-def save_path_to_config(name, path):
+def save_path_to_config(name: str, path: str) -> None:
     """Функция для сохранения пути в файл конфигурации"""
     config = get_config()
     if 'PATHS' not in config:
@@ -117,7 +120,7 @@ def save_path_to_config(name, path):
         config.write(config_file)
 
 
-def load_path_from_config(name):
+def load_path_from_config(name: str) -> str or None:
     """Функция для загрузки пути из файла конфигурации"""
     config = get_config()
     try:
@@ -127,7 +130,7 @@ def load_path_from_config(name):
     return path
 
 
-def get_value_from_config(name: str):
+def get_value_from_config(name: str) -> str:
     """Функция для загрузки значения из файла конфигурации"""
     config = get_config()
     value = config['OPTIONS'][name]
@@ -137,21 +140,14 @@ def get_value_from_config(name: str):
 
 
 # Функция меняет раскладку на нужную сама, но скрипт нужно перезапустить
-def keyboard_check():
+def keyboard_check() -> None:
     """Функция для проверки раскладки клавиатуры"""
     current_layout = pwkl.get_foreground_window_keyboard_layout()
     if current_layout != 67699721:
-        tkinter.Tk().withdraw()
-        pwkl.change_foreground_window_keyboard_layout(0x00000409)
-        tkinter.messagebox.showinfo(
-            'Неправильная раскладка',
-            'Если раскладнка не поменялась сама'
-            ' - поменяйте вручную и перезапустите скрипт'
-        )
-        raise SystemExit
+        keyboard.press_and_release('win+space')
 
 
-def reaper_check():
+def reaper_check() -> None:
     """Функция для создания путей к компонентам REAPER"""
     reaper_path = load_path_from_config('reaper_path')
     if not reaper_path:
@@ -173,19 +169,19 @@ def reaper_check():
         save_path_to_config('fx_chains_folder', fx_chains_folder)
 
 
-def reaper_run():
+def reaper_run() -> None:
     """Функция для запуска REAPER"""
     reaper_path = load_path_from_config('reaper_path')
     project_path = load_path_from_config('project_path')
     subprocess.run([reaper_path, project_path])
 
 
-def get_path_to_files(folder: str, extension: str):
+def get_path_to_files(folder: str, extension: str) -> List[str]:
     """Функция для получения пути к файлу"""
     return glob.glob(os.path.join(folder, extension))
 
 
-def subs_rename(folder: str, subs: List[str]):
+def subs_rename(folder: str, subs: List[str]) -> List[str]:
     """Функция для изменения имени субтитров"""
     filenamae = os.path.splitext(subs[0])[0].split('\\')[-2]
     s_number = os.path.basename(folder)
@@ -194,10 +190,7 @@ def subs_rename(folder: str, subs: List[str]):
     return subs
 
 
-# Для корректной работы ffmpeg из кода,
-# путь до рабочей папки не должен содержать пробелов,
-# их можно заменить на "_"
-def subs_extract(folder: str, mkv_video: List[str], param: str):
+def subs_extract(folder: str, mkv_video: List[str], param: str) -> None:
     """Функция для извлечения субтитров из видео"""
     if param == 'ass':
         command = f'ffmpeg -i "{mkv_video[0]}" "{folder}/subs.ass"'
@@ -207,7 +200,7 @@ def subs_extract(folder: str, mkv_video: List[str], param: str):
         subprocess.call(command, shell=True)
 
 
-def ass_sub_convert(folder: str):
+def ass_sub_convert(folder: str) -> None:
     """Функция для конвертирования ass субтитров"""
     disk = folder.split(':')[0].lower()
     folder_path = folder.split(':')[1]
@@ -215,7 +208,7 @@ def ass_sub_convert(folder: str):
     subprocess.call(command, shell=True)
 
 
-def vtt_sub_convert(folder: str, subs: List[str]):
+def vtt_sub_convert(folder: str, subs: List[str]) -> None:
     """Функция для конвертирования vtt субтитров"""
     filename = os.path.splitext(subs[0])[0].split('\\')[-2]
     os.rename(subs[0], filename + '/' + 'subs.vtt')
@@ -224,7 +217,7 @@ def vtt_sub_convert(folder: str, subs: List[str]):
     subprocess.call(command, shell=True)
 
 
-def video_rename(folder: str, video: List[str]):
+def video_rename(folder: str, video: List[str]) -> List[str]:
     """Функция для изменения имени видео"""
     title = folder.split('/')[-2]
     video_type = video[0].split('.')[-1]
@@ -239,7 +232,7 @@ def video_rename(folder: str, video: List[str]):
     return video
 
 
-def flac_rename(folder: str, flac_audio: List[str]):
+def flac_rename(folder: str, flac_audio: List[str]) -> List[str]:
     """Функция для изменения нечитаемых расширений"""
     for file in flac_audio:
         if '.reapeaks' not in file.lower():
@@ -247,18 +240,17 @@ def flac_rename(folder: str, flac_audio: List[str]):
                 filename = os.path.splitext(file)[0]
                 os.rename(file, filename + '.flac')
             except FileExistsError:
-                reapy.print('Файл уже существует')
+                reapy.print('Файл уже существует')  # Добавить while
                 raise SystemExit
             except PermissionError:
-                reapy.print('Файл используется')
+                reapy.print('Файл используется')  # заменить на окно
                 raise SystemExit
-        else:
-            pass
     fixed_flac = get_path_to_files(folder, '*.flac')
     return fixed_flac
 
 
-def srt_subs_edit(subs: List[str]):
+def srt_subs_edit(subs: List[str]) -> None:
+    """Функция для удаления из субтитров надписей и песен"""
     srt_subs = pysubs2.load(subs[0])
     pattern_1 = r'\((.*?)\)'
     pattern_2 = r'\[.*?]$'
@@ -276,7 +268,9 @@ def srt_subs_edit(subs: List[str]):
     srt_subs.save(subs[0])
 
 
-def file_works(folder: str):
+def file_works(folder: str) -> (
+        Tuple[List[str], List[str], List[str], List[str], List[str]]
+        ):
     """Функция для подготовки файлов к работе"""
     flac_audio = get_path_to_files(folder, '*.flac*')
     if flac_audio:
@@ -319,7 +313,7 @@ def file_works(folder: str):
     return flac_audio, wav_audio, mkv_video, mp4_video, subs
 
 
-def choice_folder():
+def choice_folder() -> str:
     """Функция для выбора рабочей папки с эпизодом"""
     folder = filedialog.askdirectory(
         title='Выберите рабочую папку с эпизодом'
@@ -328,7 +322,7 @@ def choice_folder():
 
 
 # Если имена состоят из нескольких слов, названия цепей нужно писать через "_"
-def get_fx_chains():
+def get_fx_chains() -> dict:
     """Функция создания словаря из дабберов и названий их цепей эффектов"""
     fx_dict = {}
     fx_chains_folder = load_path_from_config('fx_chains_folder')
@@ -343,7 +337,7 @@ def get_fx_chains():
 def video_select(
         mkv_video: List[str],
         mp4_video: List[str],
-        ):
+        ) -> None:
     """Функция для добавления видео"""
     if mkv_video and mp4_video:
         tkinter.messagebox.showinfo(
@@ -369,22 +363,18 @@ def video_select(
         RPR.InsertMedia(mp4_video[0], (1 << 9) | 0)
 
 
-# Полезно, если используется сплит,
-# в остальных случаях лучше закомментировать 2 раза ниже в коде
-def volume_up(track):
+def volume_up(track) -> None:
     """Функция для увеличения исходной громкости дорог"""
     value = get_value_from_config('volume_up_dubbers')
     if value == 'True':
         item = RPR.GetTrackMediaItem(track, 0)
         RPR.SetMediaItemInfo_Value(item, 'D_VOL', 1.5)
-    else:
-        pass
 
 
 def audio_select(
         flac_audio: List[str],
         wav_audio: List[str]
-        ):
+        ) -> None:
     """Функция для добавления аудио"""
     fx_chains_dict = get_fx_chains()
     for file in flac_audio:
@@ -396,7 +386,7 @@ def audio_select(
                 RPR.GetSetMediaTrackInfo_String(
                     track, 'P_NAME', name.upper(), True
                 )
-        volume_up(track)  # Первый раз
+        volume_up(track)
     for file in wav_audio:
         RPR.InsertMedia(file, 1)
         track = RPR.GetLastTouchedTrack()
@@ -406,23 +396,21 @@ def audio_select(
                 RPR.GetSetMediaTrackInfo_String(
                     track, 'P_NAME', name.upper(), True
                 )
-        volume_up(track)  # Второй раз
-    if not flac_audio and not wav_audio:
+        volume_up(track)
+    if not flac_audio and not wav_audio:  # Заменить на окно
         reapy.print('В рабочей папке нет аудио, подходящего формата')
         raise SystemExit
 
 
-# Можно дать больше времени на работу сплита, если уменьшить значение X_FILE
-def get_info_values():
-    """Функция для получения значений видео и сна"""
+def get_info_values() -> Tuple[str, int]:
+    """Функция для получения видео айтема и количества треков"""
     video_item = RPR.GetMediaItem(0, 0)
-    # lenght = RPR.GetMediaItemInfo_Value(video_item, "D_LENGTH") / 60
     all_tracks = RPR.GetNumTracks()
-    return video_item, all_tracks  # lenght
+    return video_item, all_tracks
 
 
 # Использует послендий пресет сплита
-def split(video_item, all_tracks):
+def split(video_item: str, all_tracks: int) -> None:
     """Функция для разделения дорог на айтемы"""
     value = get_value_from_config('split')
     if value == 'True':
@@ -431,17 +419,15 @@ def split(video_item, all_tracks):
         items = RPR.CountTrackMediaItems(last_track)
         items_list.append(items)
         RPR.SetMediaItemSelected(video_item, False)
-        pyautogui.hotkey('shift', 'a')
+        keyboard.press_and_release('ctrl+9')
         time.sleep(1)
-        pyautogui.press('enter')
+        keyboard.send('enter')
         while items == items_list[0]:
             time.sleep(9)
             items = RPR.CountTrackMediaItems(last_track)
-    else:
-        pass
 
 
-def normalize(video_item):
+def normalize(video_item: str) -> None:
     """Функция для нормализации айтемов по громкости"""
     normalize_loudness = RPR.NamedCommandLookup(
             '_BR_NORMALIZE_LOUDNESS_ITEMS23'
@@ -459,15 +445,12 @@ def normalize(video_item):
         RPR.SelectAllMediaItems(0, False)
         RPR.SetMediaItemSelected(video_item, True)
         RPR.Main_OnCommand(normalize_loudness, 0)
-    else:
-        pass
 
 
 # Чтобы функция работала корректно,
 # нужно повесить метод загрузки субтитров на шорткат, например "i"
 # Важно переключиться на EN раскладку, иначе шорткаты не сработают
-# и все пути к рабочей папке должны быть на английском
-def import_subs(subs: List[str]):
+def import_subs(subs: List[str]) -> None:
     """Функция для добавления субтитров"""
     value = get_value_from_config('sub_region')
     if value == 'True':
@@ -482,22 +465,20 @@ def import_subs(subs: List[str]):
         else:
             try:
                 if subs[0]:
-                    pyautogui.press('i')
+                    keyboard.send('ctrl+8')
                     time.sleep(1)
                     fix_path = subs[0].replace('/', '\\')
                     pyperclip.copy(fix_path)
                     keyboard.press_and_release('ctrl+v')
                     time.sleep(0.5)
-                    keyboard.press('enter')
+                    keyboard.send('enter')
                     position = RPR.GetCursorPosition()
                     RPR.MoveEditCursor(- position, False)
             except IndexError:
                 pass
-    else:
-        pass
 
 
-def import_subs_items(subs: List[str]):
+def import_subs_items(subs: List[str]) -> None:
     """Функция для добавления субтитров"""
     value = get_value_from_config('sub_item')
     if value == 'True':
@@ -514,20 +495,25 @@ def import_subs_items(subs: List[str]):
         else:
             try:
                 if subs[0]:
-                    pyautogui.press('/')
+                    keyboard.press_and_release('ctrl+0')
                     time.sleep(1)
                     fix_path = subs[0].replace('/', '\\')
                     pyperclip.copy(fix_path)
                     keyboard.press_and_release('ctrl+v')
                     time.sleep(0.5)
-                    keyboard.press('enter')
+                    keyboard.send('enter')
             except IndexError:
                 pass
-    else:
-        pass
 
 
-def list_generator(position, strt_idx, end_idx, list, queue):
+def list_generator(
+        position: int,
+        strt_idx: int,
+        end_idx: int,
+        list: List[List[float]],
+        queue: mp.Queue
+        ) -> None:
+    """Функция для создания списка айтемов/субтитров"""
     for i in range(strt_idx, end_idx):
         item = RPR.GetMediaItem(0, i)
         start = RPR.GetMediaItemInfo_Value(
@@ -543,7 +529,8 @@ def list_generator(position, strt_idx, end_idx, list, queue):
     queue.put(list)
 
 
-def fix_check(project: reapy.Project):
+def fix_check(project: reapy.Project) -> None:
+    """Функция для проверки на пропуски и наложения"""
     value = get_value_from_config('fix_check')
     if value == 'True':
         track = RPR.GetTrack(0, 1)
@@ -609,53 +596,45 @@ def fix_check(project: reapy.Project):
         for s in subs_list:
             if s not in checked_subs:
                 project.add_marker(s[0], 'FIX', (255, 0, 255))
-    else:
-        pass
 
 
-# В качестве имени сессии использует имя видео
-def project_save(folder: str):
+def project_save(folder: str) -> None:
     """Функция для сохранения проекта"""
     s_number = os.path.basename(folder)
     title = folder.split('/')[-2]
     project_name = f'{title} {s_number}'
     new_porject_path = folder.replace('/', '\\') + '\\' + f'{project_name}'
     pyperclip.copy(new_porject_path)
-    pyautogui.hotkey('ctrl', 'alt', 's')
+    keyboard.press_and_release('ctrl+alt+s')
     time.sleep(1)
     keyboard.press_and_release('ctrl+v')
     time.sleep(0.5)
-    keyboard.press('enter')
+    keyboard.send('enter')
 
 
 # Используется последний пресет рендера
-def render(folder: str):
+def render(folder: str) -> None:
     """Функция для рендеринга файла"""
     value = get_value_from_config('render_audio')
     if value == 'True':
         RPR.Main_OnCommand(40015, 0)
         time.sleep(1)
-        pyautogui.typewrite('audio')
+        keyboard.write('audio')
         time.sleep(1)
         for _ in range(34):
-            pyautogui.press('tab')
+            keyboard.send('tab')
+            time.sleep(0.01)
         render_path = folder.replace('/', '\\') + '\\'
         pyperclip.copy(render_path)
         keyboard.press_and_release('ctrl+v')
         time.sleep(0.5)
-        keyboard.press('enter')
-    else:
-        pass
+        keyboard.send('enter')
 
 
-# Можно дать больше времени на рендер, если уменьшить значение X_FILE
-def reaper_close(folder: str):
+def reaper_close(folder: str) -> None:
     """Функция для закрытия REAPER"""
     value = get_value_from_config('render_audio')
     if value == 'True':
-        # X_FILE = 0.13
-        # sleep = lenght / X_FILE
-        # time.sleep(sleep)
         time.sleep(3)
         audio = f'{folder}/audio.wav'
         old_file_size = os.path.getsize(audio)
@@ -666,29 +645,25 @@ def reaper_close(folder: str):
             time.sleep(3)
             new_file_size = os.path.getsize(audio)
         time.sleep(3)
-        pyautogui.hotkey('ctrl', 'q')
-        time.sleep(1)
-        pyautogui.press('enter')
-    else:
-        pass
+        RPR.Main_OnCommand(40004, 0)
 
 
-def audio_convert(folder: str):
+def audio_convert(folder: str) -> None:
+    """Функция для конвертации файла озвучки"""
     value = get_value_from_config('render_video')
     if value == 'True':
         command = (
             f'ffmpeg -i "{folder}/audio.wav" -ab 256k "{folder}/audio.aac"'
         )
         subprocess.call(command, shell=True)
-    else:
-        pass
 
 
 def make_episode(
         folder: str,
         mkv_video: List[str],
         mp4_video: List[str]
-        ):
+        ) -> None:
+    """Функция для создания видео с озвучкой"""
     value = get_value_from_config('render_video')
     if value == 'True':
         title = folder.split('/')[-2]
@@ -705,15 +680,12 @@ def make_episode(
                 f'-map 0:v:0 -map 1:a:0 "{folder}/{title}_{s_number}_DUB.mp4"'
             )
             subprocess.call(command, shell=True)
-    else:
-        pass
 
 
 # Чтобы Reaper API подгрузился он должен быть включен при запуске скрипта
 def main():
     """Основная функция"""
     freeze_support()
-    keyboard_check()
     checkbox_window()
     tkinter.Tk().withdraw()
     reaper_check()
@@ -733,6 +705,7 @@ def main():
     project.save(False)
     fix_check(project)
     render(folder)
+    project.save(False)
     reaper_close(folder)
     audio_convert(folder)
     make_episode(folder, mkv_video, mp4_video)
