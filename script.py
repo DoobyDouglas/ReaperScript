@@ -1,6 +1,8 @@
 # Команду ниже нужно ввести один раз в консоли с включенным Reaper.
 # python -c "import reapy; reapy.configure_reaper()"
 
+import ffmpeg
+import asstosrt
 import pyperclip
 import keyboard
 import pysubs2
@@ -13,7 +15,6 @@ import configparser
 import reapy
 import tkinter
 import tkinter.messagebox
-import py_win_keyboard_layout as pwkl
 import multiprocessing as mp
 from typing import List, Tuple
 from reapy import reascript_api as RPR
@@ -32,22 +33,16 @@ def get_config() -> configparser.ConfigParser:
 def save_options(
         checkboxes: dict,
         master: tkinter.Tk,
-        config: configparser.ConfigParser
+        config: configparser.ConfigParser,
+        text_input: tkinter.Entry
         ) -> None:
     """Функция для сохранения конфигураций"""
-    save_button = tkinter.Button(
-        master,
-        text='Сохранить',
-        background='#9b93b3',
-        activebackground='#9b93b3',
-        command=master.destroy
-    )
-    save_button.place(relx=0.5, rely=1.0, anchor="s", y=-9)
-    master.mainloop()
     for option, var in checkboxes.items():
         config['OPTIONS'][option] = str(var.get())
+    config['OUTPUT']['audio_output_format'] = text_input.get()
     with open('config.ini', 'w') as config_file:
         config.write(config_file)
+    master.destroy()
 
 
 def create_widgets(
@@ -80,13 +75,50 @@ def create_widgets(
             sticky=tkinter.W
         )
         checkboxes[option] = var
-    return checkboxes
+    if 'OUTPUT' not in config:
+        config['OUTPUT'] = {}
+    label = tkinter.Label(
+        master,
+        text='Audio Output Format:',
+        background='#ffc0cb',
+    )
+    label.grid(
+        row=len(OPTIONS),
+        column=0,
+        sticky=tkinter.W,
+        padx=3,
+        pady=3
+    )
+    text_input = tkinter.Entry(
+        master,
+        width=6,
+        background='#ffffff',
+        bd=3
+    )
+    text_input.grid(
+        row=len(OPTIONS),
+        column=1,
+        sticky=tkinter.W,
+        padx=3,
+        pady=3
+        )
+    if 'audio_output_format' in config['OUTPUT']:
+        text_input.insert(tkinter.END, config['OUTPUT']['audio_output_format'])
+    save_button = tkinter.Button(
+        master,
+        text='Сохранить',
+        background='#9b93b3',
+        activebackground='#9b93b3',
+        command=lambda: save_options(checkboxes, master, config, text_input)
+    )
+    save_button.place(relx=0.5, rely=1.0, anchor="s", y=-9)
+    master.mainloop()
 
 
 def checkbox_window() -> None:
     """Функция для создания окна выбора конфигураций"""
     master = tkinter.Tk()
-    master.geometry('380x350')
+    master.geometry('380x390')  # '380x350'
     master.resizable(width=False, height=False)
     master.title('Выберите нужные опции')
     img = Image.open("background.png")
@@ -106,8 +138,7 @@ def checkbox_window() -> None:
         'render_video',
     ]
     config = get_config()
-    checkboxes = create_widgets(OPTIONS, master, config)
-    save_options(checkboxes, master, config)
+    create_widgets(OPTIONS, master, config)
 
 
 def save_path_to_config(name: str, path: str) -> None:
@@ -133,18 +164,12 @@ def load_path_from_config(name: str) -> str or None:
 def get_value_from_config(name: str) -> str:
     """Функция для загрузки значения из файла конфигурации"""
     config = get_config()
+    if name == 'audio_output_format':
+        return config['OUTPUT'][name]
     value = config['OPTIONS'][name]
     if value == 'True':
         return 'True'
     return 'False'
-
-
-# Функция меняет раскладку на нужную сама, но скрипт нужно перезапустить
-def keyboard_check() -> None:
-    """Функция для проверки раскладки клавиатуры"""
-    current_layout = pwkl.get_foreground_window_keyboard_layout()
-    if current_layout != 67699721:
-        keyboard.press_and_release('win+space')
 
 
 def reaper_check() -> None:
@@ -192,20 +217,19 @@ def subs_rename(folder: str, subs: List[str]) -> List[str]:
 
 def subs_extract(folder: str, mkv_video: List[str], param: str) -> None:
     """Функция для извлечения субтитров из видео"""
-    if param == 'ass':
-        command = f'ffmpeg -i "{mkv_video[0]}" "{folder}/subs.ass"'
-        subprocess.call(command, shell=True)
-    if param == 'srt':
-        command = f'ffmpeg -i "{mkv_video[0]}" "{folder}/subs.srt"'
-        subprocess.call(command, shell=True)
+    video_path = mkv_video[0].replace('\\', '/')
+    input_file = ffmpeg.input(video_path)
+    output_file = f'{folder}/subs.{param}'
+    output = ffmpeg.output(input_file, output_file)
+    ffmpeg.run(output)
 
 
-def ass_sub_convert(folder: str) -> None:
+def ass_sub_convert(folder: str, subs: List[str]) -> None:
     """Функция для конвертирования ass субтитров"""
-    disk = folder.split(':')[0].lower()
-    folder_path = folder.split(':')[1]
-    command = f'{disk}: && cd {folder_path} && asstosrt -e utf-8'
-    subprocess.call(command, shell=True)
+    with open(subs[0], 'r', encoding='utf-8') as ass_file:
+        srt_sub = asstosrt.convert(ass_file)
+    with open(f'{folder}/subs.srt', 'w', encoding='utf-8') as srt_file:
+        srt_file.write(srt_sub)
 
 
 def vtt_sub_convert(folder: str, subs: List[str]) -> None:
@@ -213,8 +237,11 @@ def vtt_sub_convert(folder: str, subs: List[str]) -> None:
     filename = os.path.splitext(subs[0])[0].split('\\')[-2]
     os.rename(subs[0], filename + '/' + 'subs.vtt')
     subs = get_path_to_files(folder, '*.vtt')
-    command = f'ffmpeg -i "{subs[0]}" "{folder}/subs.srt"'
-    subprocess.call(command, shell=True)
+    subs_path = subs[0].replace('\\', '/')
+    input_file = ffmpeg.input(subs_path)
+    output_file = f'{folder}/subs.srt'
+    output = ffmpeg.output(input_file, output_file)
+    ffmpeg.run(output)
 
 
 def video_rename(folder: str, video: List[str]) -> List[str]:
@@ -293,7 +320,7 @@ def file_works(folder: str) -> (
                 subs_extract(folder, mkv_video, 'ass')
                 ass_subs = get_path_to_files(folder, '*.ass')
         if ass_subs:
-            ass_sub_convert(folder)
+            ass_sub_convert(folder, ass_subs)
         vtt_subs = get_path_to_files(folder, '*.vtt')
         if vtt_subs:
             vtt_sub_convert(folder, vtt_subs)
@@ -414,17 +441,21 @@ def split(video_item: str, all_tracks: int) -> None:
     """Функция для разделения дорог на айтемы"""
     value = get_value_from_config('split')
     if value == 'True':
-        items_list = []
         last_track = RPR.GetTrack(0, all_tracks - 1)
         items = RPR.CountTrackMediaItems(last_track)
-        items_list.append(items)
         RPR.SetMediaItemSelected(video_item, False)
         keyboard.send('ctrl+9')
         time.sleep(1)
         keyboard.send('enter')
-        while items == items_list[0]:
-            time.sleep(9)
+        while items == 1:
+            time.sleep(3)
             items = RPR.CountTrackMediaItems(last_track)
+        time.sleep(3)
+        items_now = RPR.CountTrackMediaItems(last_track)
+        while items_now > items:
+            items = items_now
+            time.sleep(3)
+            items_now = RPR.CountTrackMediaItems(last_track)
 
 
 def normalize(video_item: str) -> None:
@@ -648,16 +679,6 @@ def reaper_close(folder: str) -> None:
         RPR.Main_OnCommand(40004, 0)
 
 
-def audio_convert(folder: str) -> None:
-    """Функция для конвертации файла озвучки"""
-    value = get_value_from_config('render_video')
-    if value == 'True':
-        command = (
-            f'ffmpeg -i "{folder}/audio.wav" -ab 256k "{folder}/audio.aac"'
-        )
-        subprocess.call(command, shell=True)
-
-
 def make_episode(
         folder: str,
         mkv_video: List[str],
@@ -665,21 +686,31 @@ def make_episode(
         ) -> None:
     """Функция для создания видео с озвучкой"""
     value = get_value_from_config('render_video')
-    if value == 'True':
+    ext = get_value_from_config('audio_output_format')
+    if value == 'True' and ext:
         title = folder.split('/')[-2]
         s_number = os.path.basename(folder)
         if mkv_video:
-            command = (
-                f'ffmpeg -i "{mkv_video[0]}" -i "{folder}/audio.aac" -c copy '
-                f'-map 0:v:0 -map 1:a:0 "{folder}/{title}_{s_number}_DUB.mkv"'
-            )
-            subprocess.call(command, shell=True)
-        if mp4_video:
-            command = (
-                f'ffmpeg -i "{mp4_video[0]}" -i "{folder}/audio.aac" -c copy '
-                f'-map 0:v:0 -map 1:a:0 "{folder}/{title}_{s_number}_DUB.mp4"'
-            )
-            subprocess.call(command, shell=True)
+            param = 'mkv'
+            video_path = mkv_video[0].replace('\\', '/')
+        elif mp4_video:
+            param = 'mp4'
+            video_path = mp4_video[0].replace('\\', '/')
+        audio_path = f'{folder}/audio.{ext}'
+        output_file = f'{folder}/{title}_{s_number}_DUB.{param}'
+        video_file = ffmpeg.input(video_path)
+        audio_file = ffmpeg.input(audio_path)
+        output_options = {
+            'vcodec': 'copy',
+            'acodec': 'aac',
+            'audio_bitrate': '256k',
+        }
+        output = ffmpeg.output(
+            video_file['v'],
+            audio_file['a'],
+            output_file,
+            **output_options)
+        ffmpeg.run(output)
 
 
 # Чтобы Reaper API подгрузился он должен быть включен при запуске скрипта
@@ -707,7 +738,6 @@ def main():
     render(folder)
     project.save(False)
     reaper_close(folder)
-    audio_convert(folder)
     make_episode(folder, mkv_video, mp4_video)
 
 
