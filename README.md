@@ -1,4 +1,5 @@
-Для корректной работы всех функций, необходимо установить в систему python-reapy==0.10.0 и прописать ffmpeg в PATH
+Для корректной работы всех функций, необходимо установить в систему python-reapy==0.10.0 и ffmpeg
+FFmpeg нужно прописать в PATH
 
 Включаем REAPER, в консоли пишем python -c "import reapy; reapy.configure_reaper()"
 
