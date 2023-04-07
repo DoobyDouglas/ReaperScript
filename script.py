@@ -16,7 +16,7 @@ import reapy
 import tkinter
 import tkinter.messagebox
 import multiprocessing as mp
-from typing import List, Tuple
+from typing import List, Tuple, Dict
 from reapy import reascript_api as RPR
 from tkinter import filedialog
 from multiprocessing import freeze_support
@@ -31,7 +31,7 @@ def get_config() -> configparser.ConfigParser:
 
 
 def save_options(
-        checkboxes: dict,
+        checkboxes: Dict[str, str],
         master: tkinter.Tk,
         config: configparser.ConfigParser,
         text_input: tkinter.Entry
@@ -49,7 +49,7 @@ def create_widgets(
         OPTIONS: list,
         master: tkinter.Tk,
         config: configparser.ConfigParser
-        ) -> dict:
+        ) -> None:
     """Функция для создания списка конфигураций"""
     checkboxes = {}
     if 'OPTIONS' not in config:
@@ -118,7 +118,7 @@ def create_widgets(
 def checkbox_window() -> None:
     """Функция для создания окна выбора конфигураций"""
     master = tkinter.Tk()
-    master.geometry('380x390')  # '380x350'
+    master.geometry('380x390')
     master.resizable(width=False, height=False)
     master.title('Выберите нужные опции')
     img = Image.open("background.png")
@@ -161,15 +161,15 @@ def load_path_from_config(name: str) -> str or None:
     return path
 
 
-def get_value_from_config(name: str) -> str:
+def get_value_from_config(name: str) -> str or bool:
     """Функция для загрузки значения из файла конфигурации"""
     config = get_config()
     if name == 'audio_output_format':
         return config['OUTPUT'][name]
     value = config['OPTIONS'][name]
     if value == 'True':
-        return 'True'
-    return 'False'
+        return True
+    return False
 
 
 def reaper_check() -> None:
@@ -215,12 +215,14 @@ def subs_rename(folder: str, subs: List[str]) -> List[str]:
     return subs
 
 
-def subs_extract(folder: str, mkv_video: List[str], param: str) -> None:
+def subs_extract(
+        folder: str, mkv_video: List[str], param: str, mapping: str
+        ) -> None:
     """Функция для извлечения субтитров из видео"""
     video_path = mkv_video[0].replace('\\', '/')
     input_file = ffmpeg.input(video_path)
     output_file = f'{folder}/subs.{param}'
-    output = ffmpeg.output(input_file, output_file)
+    output = ffmpeg.output(input_file, output_file, map=mapping)
     ffmpeg.run(output)
 
 
@@ -276,23 +278,42 @@ def flac_rename(folder: str, flac_audio: List[str]) -> List[str]:
     return fixed_flac
 
 
-def srt_subs_edit(subs: List[str]) -> None:
-    """Функция для удаления из субтитров надписей и песен"""
-    srt_subs = pysubs2.load(subs[0])
-    pattern_1 = r'\((.*?)\)'
-    pattern_2 = r'\[.*?]$'
-    pattern_3 = '♫'
-    pattern_4 = '♪'
-    to_delete = [
-        i for i, line in enumerate(srt_subs) if re.match(pattern_1, line.text)
-        or re.match(pattern_2, line.text)
-        or pattern_3 in line.text
-        or pattern_4 in line.text
-    ]
-    for i in reversed(to_delete):
-        del srt_subs[i]
+def comparator(actor: str) -> bool:
+    """Функция для проверки субтитра"""
+    if (
+        'text' in actor
+        or 'sign' in actor
+        or 'надпись' in actor
+    ):
+        return True
+    return False
 
-    srt_subs.save(subs[0])
+
+def subs_edit(subs: List[str], flag: str) -> None:
+    """Функция для удаления из субтитров надписей и песен"""
+    subtitles = pysubs2.load(subs[0])
+    if flag == 'srt':
+        pattern_1 = r'\((.*?)\)'
+        pattern_2 = r'\[.*?]$'
+        pattern_3 = '♫'
+        pattern_4 = '♪'
+        to_delete = [
+            i for i, line in enumerate(subtitles) if (
+                re.match(pattern_1, line.text)
+                or re.match(pattern_2, line.text)
+                or pattern_3 in line.text
+                or pattern_4 in line.text
+            )
+        ]
+    elif flag == 'ass':
+        if subtitles.events[0].name:
+            to_delete = []
+            for i, sub in enumerate(subtitles.events):
+                if comparator(sub.name.lower()):
+                    to_delete.append(i)
+    for i in reversed(to_delete):
+        del subtitles[i]
+    subtitles.save(subs[0])
 
 
 def file_works(folder: str) -> (
@@ -312,14 +333,18 @@ def file_works(folder: str) -> (
     subs = get_path_to_files(folder, '*.srt')
     if subs:
         subs = subs_rename(folder, subs)
-        srt_subs_edit(subs)
+        subs_edit(subs, 'srt')
     else:
         ass_subs = get_path_to_files(folder, '*.ass')
         if not ass_subs:
             if mkv_video:
-                subs_extract(folder, mkv_video, 'ass')
+                subs_extract(folder, mkv_video, 'ass', '0:s:m:language:eng')
                 ass_subs = get_path_to_files(folder, '*.ass')
+                if not ass_subs:
+                    subs_extract(folder, mkv_video, 'ass', '0:s:m:language:?')
+                    ass_subs = get_path_to_files(folder, '*.ass')
         if ass_subs:
+            subs_edit(ass_subs, 'ass')
             ass_sub_convert(folder, ass_subs)
         vtt_subs = get_path_to_files(folder, '*.vtt')
         if vtt_subs:
@@ -327,14 +352,14 @@ def file_works(folder: str) -> (
         srt_subs = get_path_to_files(folder, '*.srt')
         if srt_subs:
             subs = subs_rename(folder, srt_subs)
-            srt_subs_edit(subs)
+            subs_edit(subs, 'srt')
         else:
             try:
                 if mkv_video:
-                    subs_extract(folder, mkv_video, 'srt')
+                    subs_extract(folder, mkv_video, 'srt', '0:s:m:language:?')
                     subs = get_path_to_files(folder, '*.srt')
                     subs = subs_rename(folder, subs)
-                    srt_subs_edit(subs)
+                    subs_edit(subs, 'srt')
             except IndexError:
                 pass
     return flac_audio, wav_audio, mkv_video, mp4_video, subs
@@ -349,7 +374,7 @@ def choice_folder() -> str:
 
 
 # Если имена состоят из нескольких слов, названия цепей нужно писать через "_"
-def get_fx_chains() -> dict:
+def get_fx_chains() -> Dict[str, str]:
     """Функция создания словаря из дабберов и названий их цепей эффектов"""
     fx_dict = {}
     fx_chains_folder = load_path_from_config('fx_chains_folder')
@@ -393,7 +418,7 @@ def video_select(
 def volume_up(track) -> None:
     """Функция для увеличения исходной громкости дорог"""
     value = get_value_from_config('volume_up_dubbers')
-    if value == 'True':
+    if value:
         item = RPR.GetTrackMediaItem(track, 0)
         RPR.SetMediaItemInfo_Value(item, 'D_VOL', 1.5)
 
@@ -440,7 +465,7 @@ def get_info_values() -> Tuple[str, int]:
 def split(video_item: str, all_tracks: int) -> None:
     """Функция для разделения дорог на айтемы"""
     value = get_value_from_config('split')
-    if value == 'True':
+    if value:
         last_track = RPR.GetTrack(0, all_tracks - 1)
         items = RPR.CountTrackMediaItems(last_track)
         RPR.SetMediaItemSelected(video_item, False)
@@ -464,15 +489,15 @@ def normalize(video_item: str) -> None:
             '_BR_NORMALIZE_LOUDNESS_ITEMS23'
         )
     value = get_value_from_config('normalize')
-    if value == 'True':
+    if value:
         RPR.SelectAllMediaItems(0, True)
         RPR.Main_OnCommand(normalize_loudness, 0)
     value = get_value_from_config('normalize_dubbers')
-    if value == 'True':
+    if value:
         RPR.SetMediaItemSelected(video_item, False)
         RPR.Main_OnCommand(normalize_loudness, 0)
     value = get_value_from_config('normalize_video')
-    if value == 'True':
+    if value:
         RPR.SelectAllMediaItems(0, False)
         RPR.SetMediaItemSelected(video_item, True)
         RPR.Main_OnCommand(normalize_loudness, 0)
@@ -484,7 +509,7 @@ def normalize(video_item: str) -> None:
 def import_subs(subs: List[str]) -> None:
     """Функция для добавления субтитров"""
     value = get_value_from_config('sub_region')
-    if value == 'True':
+    if value:
         if len(subs) > 1:
             tkinter.messagebox.showinfo(
                     'Много Субтитров',
@@ -512,7 +537,7 @@ def import_subs(subs: List[str]) -> None:
 def import_subs_items(subs: List[str]) -> None:
     """Функция для добавления субтитров"""
     value = get_value_from_config('sub_item')
-    if value == 'True':
+    if value:
         if len(subs) > 1:
             tkinter.messagebox.showinfo(
                     'Много Субтитров',
@@ -563,7 +588,7 @@ def list_generator(
 def fix_check(project: reapy.Project) -> None:
     """Функция для проверки на пропуски и наложения"""
     value = get_value_from_config('fix_check')
-    if value == 'True':
+    if value:
         track = RPR.GetTrack(0, 1)
         subs_enum = RPR.CountTrackMediaItems(track)
         items_enum = RPR.CountMediaItems(0)
@@ -647,7 +672,7 @@ def project_save(folder: str) -> None:
 def render(folder: str) -> None:
     """Функция для рендеринга файла"""
     value = get_value_from_config('render_audio')
-    if value == 'True':
+    if value:
         RPR.Main_OnCommand(40015, 0)
         time.sleep(1)
         keyboard.write('audio')
@@ -665,7 +690,7 @@ def render(folder: str) -> None:
 def reaper_close(folder: str) -> None:
     """Функция для закрытия REAPER"""
     value = get_value_from_config('render_audio')
-    if value == 'True':
+    if value:
         time.sleep(3)
         audio = f'{folder}/audio.wav'
         old_file_size = os.path.getsize(audio)
@@ -687,7 +712,7 @@ def make_episode(
     """Функция для создания видео с озвучкой"""
     value = get_value_from_config('render_video')
     ext = get_value_from_config('audio_output_format')
-    if value == 'True' and ext:
+    if value and ext:
         title = folder.split('/')[-2]
         s_number = os.path.basename(folder)
         if mkv_video:
