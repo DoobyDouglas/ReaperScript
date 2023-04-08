@@ -305,14 +305,16 @@ def subs_edit(subs: List[str], flag: str) -> None:
                 or pattern_4 in line.text
             )
         ]
+        for i in reversed(to_delete):
+            del subtitles[i]
     elif flag == 'ass':
         if subtitles.events[0].name:
             to_delete = []
             for i, sub in enumerate(subtitles.events):
                 if comparator(sub.name.lower()):
                     to_delete.append(i)
-    for i in reversed(to_delete):
-        del subtitles[i]
+        for i in reversed(to_delete):
+            del subtitles[i]
     subtitles.save(subs[0])
 
 
