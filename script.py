@@ -284,6 +284,7 @@ def comparator(actor: str) -> bool:
         'text' in actor
         or 'sign' in actor
         or 'надпись' in actor
+        or 'caption' in actor
     ):
         return True
     return False
