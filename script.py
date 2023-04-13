@@ -166,10 +166,8 @@ def get_value_from_config(name: str) -> str or bool:
     config = get_config()
     if name == 'audio_output_format':
         return config['OUTPUT'][name]
-    value = config['OPTIONS'][name]
-    if value == 'True':
-        return True
-    return False
+    else:
+        return config['OPTIONS'].getboolean(name)
 
 
 def reaper_check() -> None:
