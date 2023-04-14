@@ -166,10 +166,8 @@ def get_value_from_config(name: str) -> str or bool:
     config = get_config()
     if name == 'audio_output_format':
         return config['OUTPUT'][name]
-    value = config['OPTIONS'][name]
-    if value == 'True':
-        return True
-    return False
+    else:
+        return config['OPTIONS'].getboolean(name)
 
 
 def reaper_check() -> None:
@@ -284,6 +282,7 @@ def comparator(actor: str) -> bool:
         'text' in actor
         or 'sign' in actor
         or 'надпись' in actor
+        or 'caption' in actor
     ):
         return True
     return False
@@ -311,6 +310,8 @@ def subs_edit(subs: List[str], flag: str) -> None:
             for i, sub in enumerate(subtitles.events):
                 if comparator(sub.name.lower()):
                     to_delete.append(i)
+        else:
+            return
     for i in reversed(to_delete):
         del subtitles[i]
     subtitles.save(subs[0])
