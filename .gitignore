@@ -9,6 +9,8 @@ __pycache__/
 # Distribution / packaging
 .Python
 config.ini
+newstuff.py
+verynew.py
 nucheck.py
 nucheck copy.py
 some_files/
