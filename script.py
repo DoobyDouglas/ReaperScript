@@ -10,7 +10,9 @@ import re
 import subprocess
 import time
 import os
+import shutil
 import glob
+import ctypes
 import configparser
 import reapy
 import tkinter
@@ -161,7 +163,7 @@ def load_path_from_config(name: str) -> str or None:
     return path
 
 
-def get_value_from_config(name: str) -> str or bool:
+def get_value(name: str) -> str or bool:
     """Функция для загрузки значения из файла конфигурации"""
     config = get_config()
     if name == 'audio_output_format':
@@ -190,13 +192,6 @@ def reaper_check() -> None:
             title='Выберите папку с цепями эффектов'
         )
         save_path_to_config('fx_chains_folder', fx_chains_folder)
-
-
-def reaper_run() -> None:
-    """Функция для запуска REAPER"""
-    reaper_path = load_path_from_config('reaper_path')
-    project_path = load_path_from_config('project_path')
-    subprocess.run([reaper_path, project_path])
 
 
 def get_path_to_files(folder: str, extension: str) -> List[str]:
@@ -276,13 +271,17 @@ def flac_rename(folder: str, flac_audio: List[str]) -> List[str]:
     return fixed_flac
 
 
-def comparator(actor: str) -> bool:
+def comparator(sub: str) -> bool:
     """Функция для проверки субтитра"""
     if (
-        'text' in actor
-        or 'sign' in actor
-        or 'надпись' in actor
-        or 'caption' in actor
+        'text' in sub
+        or 'sign' in sub
+        or 'надпись' in sub
+        or 'caption' in sub
+        or 'title' in sub
+        or 'song' in sub
+        or 'screen' in sub
+        or 'typedigital' in sub
     ):
         return True
     return False
@@ -305,10 +304,21 @@ def subs_edit(subs: List[str], flag: str) -> None:
             )
         ]
     elif flag == 'ass':
-        if subtitles.events[0].name:
-            to_delete = []
+        to_delete = []
+        if subtitles.events[0].name and subtitles.events[0].style:
+            for i, sub in enumerate(subtitles.events):
+                if (
+                    comparator(sub.name.lower())
+                    or comparator(sub.style.lower())
+                ):
+                    to_delete.append(i)
+        elif subtitles.events[0].name:
             for i, sub in enumerate(subtitles.events):
                 if comparator(sub.name.lower()):
+                    to_delete.append(i)
+        elif subtitles.events[0].style:
+            for i, sub in enumerate(subtitles.events):
+                if comparator(sub.style.lower()):
                     to_delete.append(i)
         else:
             return
@@ -418,7 +428,7 @@ def video_select(
 
 def volume_up(track) -> None:
     """Функция для увеличения исходной громкости дорог"""
-    value = get_value_from_config('volume_up_dubbers')
+    value = get_value('volume_up_dubbers')
     if value:
         item = RPR.GetTrackMediaItem(track, 0)
         RPR.SetMediaItemInfo_Value(item, 'D_VOL', 1.5)
@@ -455,33 +465,27 @@ def audio_select(
         raise SystemExit
 
 
-def get_info_values() -> Tuple[str, int]:
-    """Функция для получения видео айтема и количества треков"""
-    video_item = RPR.GetMediaItem(0, 0)
-    all_tracks = RPR.GetNumTracks()
-    return video_item, all_tracks
-
-
 # Использует послендий пресет сплита
-def split(video_item: str, all_tracks: int) -> None:
+def split(video_item: str) -> None:
     """Функция для разделения дорог на айтемы"""
-    value = get_value_from_config('split')
+    value = get_value('split')
     if value:
-        last_track = RPR.GetTrack(0, all_tracks - 1)
-        items = RPR.CountTrackMediaItems(last_track)
+        RPR.SelectAllMediaItems(0, True)
         RPR.SetMediaItemSelected(video_item, False)
-        keyboard.send('ctrl+9')
-        time.sleep(1)
-        keyboard.send('enter')
-        while items == 1:
-            time.sleep(3)
-            items = RPR.CountTrackMediaItems(last_track)
-        time.sleep(3)
-        items_now = RPR.CountTrackMediaItems(last_track)
-        while items_now > items:
-            items = items_now
-            time.sleep(3)
-            items_now = RPR.CountTrackMediaItems(last_track)
+        RPR.Main_OnCommand(40760, 0)
+        hwnd = ctypes.windll.user32.FindWindowW(
+            '#32770',
+            'Dynamic split items'
+        )
+        button_id = 1
+        button_hwnd = ctypes.windll.user32.GetDlgItem(hwnd, button_id)
+        if button_hwnd != 0:
+            button_status = ctypes.windll.user32.IsWindowEnabled(button_hwnd)
+        while not button_status:
+            time.sleep(2)
+            button_status = ctypes.windll.user32.IsWindowEnabled(button_hwnd)
+        ctypes.windll.user32.SendMessageW(hwnd, 0x111, 1, 0)
+        time.sleep(0.5)
 
 
 def normalize(video_item: str) -> None:
@@ -489,27 +493,24 @@ def normalize(video_item: str) -> None:
     normalize_loudness = RPR.NamedCommandLookup(
             '_BR_NORMALIZE_LOUDNESS_ITEMS23'
         )
-    value = get_value_from_config('normalize')
+    value = get_value('normalize')
     if value:
         RPR.SelectAllMediaItems(0, True)
         RPR.Main_OnCommand(normalize_loudness, 0)
-    value = get_value_from_config('normalize_dubbers')
+    value = get_value('normalize_dubbers')
     if value:
         RPR.SetMediaItemSelected(video_item, False)
         RPR.Main_OnCommand(normalize_loudness, 0)
-    value = get_value_from_config('normalize_video')
+    value = get_value('normalize_video')
     if value:
         RPR.SelectAllMediaItems(0, False)
         RPR.SetMediaItemSelected(video_item, True)
         RPR.Main_OnCommand(normalize_loudness, 0)
 
 
-# Чтобы функция работала корректно,
-# нужно повесить метод загрузки субтитров на шорткат, например "i"
-# Важно переключиться на EN раскладку, иначе шорткаты не сработают
-def import_subs(subs: List[str]) -> None:
+def import_subs(subs: List[str], project: reapy.Project) -> None:
     """Функция для добавления субтитров"""
-    value = get_value_from_config('sub_region')
+    value = get_value('sub_region')
     if value:
         if len(subs) > 1:
             tkinter.messagebox.showinfo(
@@ -522,22 +523,20 @@ def import_subs(subs: List[str]) -> None:
         else:
             try:
                 if subs[0]:
-                    keyboard.send('ctrl+8')
-                    time.sleep(1)
-                    fix_path = subs[0].replace('/', '\\')
-                    pyperclip.copy(fix_path)
-                    keyboard.press_and_release('ctrl+v')
-                    time.sleep(0.5)
-                    keyboard.send('enter')
-                    position = RPR.GetCursorPosition()
-                    RPR.MoveEditCursor(- position, False)
+                    subtitles = pysubs2.load(subs[0])
+                    for sub in subtitles:
+                        start = sub.start / 1000
+                        end = sub.end / 1000
+                        project.add_region(
+                            start, end, sub.text, (70, 130, 180)
+                        )
             except IndexError:
                 pass
 
 
-def import_subs_items(subs: List[str]) -> None:
+def import_subs_items(subs: List[str], project: reapy.Project) -> None:
     """Функция для добавления субтитров"""
-    value = get_value_from_config('sub_item')
+    value = get_value('sub_item')
     if value:
         if len(subs) > 1:
             tkinter.messagebox.showinfo(
@@ -552,13 +551,12 @@ def import_subs_items(subs: List[str]) -> None:
         else:
             try:
                 if subs[0]:
-                    keyboard.send('ctrl+0')
-                    time.sleep(1)
-                    fix_path = subs[0].replace('/', '\\')
-                    pyperclip.copy(fix_path)
-                    keyboard.press_and_release('ctrl+v')
-                    time.sleep(0.5)
-                    keyboard.send('enter')
+                    subtitles = pysubs2.load(subs[0])
+                    for sub in subtitles:
+                        start = sub.start / 1000
+                        end = sub.end / 1000
+                        item = project.tracks[1].add_item(start, end)
+                        RPR.ULT_SetMediaItemNote(item.id, sub.text)
             except IndexError:
                 pass
 
@@ -588,7 +586,7 @@ def list_generator(
 
 def fix_check(project: reapy.Project) -> None:
     """Функция для проверки на пропуски и наложения"""
-    value = get_value_from_config('fix_check')
+    value = get_value('fix_check')
     if value:
         track = RPR.GetTrack(0, 1)
         subs_enum = RPR.CountTrackMediaItems(track)
@@ -655,24 +653,21 @@ def fix_check(project: reapy.Project) -> None:
                 project.add_marker(s[0], 'FIX', (255, 0, 255))
 
 
-def project_save(folder: str) -> None:
+def project_save(folder: str) -> str:
     """Функция для сохранения проекта"""
+    project_path = load_path_from_config('project_path')
     s_number = os.path.basename(folder)
     title = folder.split('/')[-2]
-    project_name = f'{title} {s_number}'
-    new_porject_path = folder.replace('/', '\\') + '\\' + f'{project_name}'
-    pyperclip.copy(new_porject_path)
-    keyboard.send('ctrl+alt+s')
-    time.sleep(1)
-    keyboard.press_and_release('ctrl+v')
-    time.sleep(0.5)
-    keyboard.send('enter')
+    project_name = f'{title} {s_number}.rpp'
+    new_path = folder + '/' + project_name
+    shutil.copy(project_path, new_path)
+    return new_path
 
 
 # Используется последний пресет рендера
 def render(folder: str) -> None:
     """Функция для рендеринга файла"""
-    value = get_value_from_config('render_audio')
+    value = get_value('render_audio')
     if value:
         RPR.Main_OnCommand(40015, 0)
         time.sleep(1)
@@ -690,7 +685,7 @@ def render(folder: str) -> None:
 
 def reaper_close(folder: str) -> None:
     """Функция для закрытия REAPER"""
-    value = get_value_from_config('render_audio')
+    value = get_value('render_audio')
     if value:
         time.sleep(3)
         audio = f'{folder}/audio.wav'
@@ -711,8 +706,8 @@ def make_episode(
         mp4_video: List[str]
         ) -> None:
     """Функция для создания видео с озвучкой"""
-    value = get_value_from_config('render_video')
-    ext = get_value_from_config('audio_output_format')
+    value = get_value('render_video')
+    ext = get_value('audio_output_format')
     if value and ext:
         title = folder.split('/')[-2]
         s_number = os.path.basename(folder)
@@ -748,17 +743,17 @@ def main():
     reaper_check()
     folder = choice_folder()
     flac_audio, wav_audio, mkv_video, mp4_video, subs = file_works(folder)
-    reaper_run()
+    new_path = project_save(folder)
+    reaper_path = load_path_from_config('reaper_path')
+    subprocess.run([reaper_path, new_path])
     project = reapy.Project()
-    project_save(folder)
-    import_subs_items(subs)
-    import_subs(subs)
     audio_select(flac_audio, wav_audio)
     video_select(mkv_video, mp4_video)
+    split(project.items[0].id)
+    import_subs_items(subs, project)
+    import_subs(subs, project)
     project.save(False)
-    video_item, all_tracks = get_info_values()
-    split(video_item, all_tracks)
-    normalize(video_item)
+    normalize(project.items[0].id)
     project.save(False)
     fix_check(project)
     render(folder)
