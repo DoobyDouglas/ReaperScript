@@ -274,14 +274,16 @@ def flac_rename(folder: str, flac_audio: List[str]) -> List[str]:
 def comparator(sub: str) -> bool:
     """Функция для проверки субтитра"""
     if (
-        'text' in sub
-        or 'sign' in sub
-        or 'надпись' in sub
-        or 'caption' in sub
-        or 'title' in sub
-        or 'song' in sub
-        or 'screen' in sub
-        or 'typedigital' in sub
+        (
+            'text' in sub
+            or 'sign' in sub
+            or 'надпись' in sub
+            or 'caption' in sub
+            or 'title' in sub
+            or 'song' in sub
+            or 'screen' in sub
+            or 'typedigital' in sub
+        ) and 'subtitle' not in sub
     ):
         return True
     return False
@@ -305,20 +307,21 @@ def subs_edit(subs: List[str], flag: str) -> None:
         ]
     elif flag == 'ass':
         to_delete = []
+        search_char = '{'
         if subtitles.events[0].name and subtitles.events[0].style:
             for i, sub in enumerate(subtitles.events):
                 if (
                     comparator(sub.name.lower())
                     or comparator(sub.style.lower())
-                ):
+                ) and search_char in sub.text:
                     to_delete.append(i)
         elif subtitles.events[0].name:
             for i, sub in enumerate(subtitles.events):
-                if comparator(sub.name.lower()):
+                if comparator(sub.name.lower()) and search_char in sub.text:
                     to_delete.append(i)
         elif subtitles.events[0].style:
             for i, sub in enumerate(subtitles.events):
-                if comparator(sub.style.lower()):
+                if comparator(sub.style.lower()) and search_char in sub.text:
                     to_delete.append(i)
         else:
             return
@@ -415,7 +418,7 @@ def video_select(
                 'В рабочей папке есть несколько видео одного формата'
             )
             raise SystemExit
-        RPR.InsertMedia(mkv_video[0], (1 << 9) | 0)
+        RPR.InsertMedia(mkv_video[0], 512 | 0)
     elif mp4_video:
         if len(mp4_video) > 1:
             tkinter.messagebox.showinfo(
@@ -423,7 +426,7 @@ def video_select(
                 'В рабочей папке есть несколько видео одного формата'
             )
             raise SystemExit
-        RPR.InsertMedia(mp4_video[0], (1 << 9) | 0)
+        RPR.InsertMedia(mp4_video[0], 512 | 0)
 
 
 def volume_up(track) -> None:
@@ -482,83 +485,143 @@ def split(video_item: str) -> None:
         if button_hwnd != 0:
             button_status = ctypes.windll.user32.IsWindowEnabled(button_hwnd)
         while not button_status:
-            time.sleep(2)
+            time.sleep(1)
             button_status = ctypes.windll.user32.IsWindowEnabled(button_hwnd)
         ctypes.windll.user32.SendMessageW(hwnd, 0x111, 1, 0)
-        time.sleep(0.5)
 
 
-def normalize(video_item: str) -> None:
-    """Функция для нормализации айтемов по громкости"""
-    normalize_loudness = RPR.NamedCommandLookup(
+def hide_window():
+    hwnd = ctypes.windll.user32.FindWindowW(
+        '#32770', 'SWS/BR - Normalizing loudness...'
+    )
+    while not hwnd:
+        time.sleep(0.1)
+        hwnd = ctypes.windll.user32.FindWindowW(
+            '#32770', 'SWS/BR - Normalizing loudness...'
+        )
+    ctypes.windll.user32.ShowWindow(hwnd, 0)  # 0 полностью, 2 свернуть
+
+
+def normalize_all(command: int) -> None:
+    """Функция для нормализации всего по громкости"""
+    RPR.SelectAllMediaItems(0, True)
+    RPR.Main_OnCommand(command, 0)
+
+
+def normalize_dubbers(command: int, video_item: str) -> None:
+    RPR.SelectAllMediaItems(0, True)
+    RPR.SetMediaItemSelected(video_item, False)
+    RPR.Main_OnCommand(command, 0)
+
+
+def normalize_video(command: int, video_item: str) -> None:
+    RPR.SelectAllMediaItems(0, False)
+    RPR.SetMediaItemSelected(video_item, True)
+    RPR.Main_OnCommand(command, 0)
+
+
+def hidden_normalize(video_item: str) -> None:
+    normalize = RPR.NamedCommandLookup(
             '_BR_NORMALIZE_LOUDNESS_ITEMS23'
         )
-    value = get_value('normalize')
-    if value:
-        RPR.SelectAllMediaItems(0, True)
-        RPR.Main_OnCommand(normalize_loudness, 0)
-    value = get_value('normalize_dubbers')
-    if value:
-        RPR.SetMediaItemSelected(video_item, False)
-        RPR.Main_OnCommand(normalize_loudness, 0)
-    value = get_value('normalize_video')
-    if value:
-        RPR.SelectAllMediaItems(0, False)
-        RPR.SetMediaItemSelected(video_item, True)
-        RPR.Main_OnCommand(normalize_loudness, 0)
+    if get_value('normalize'):
+        norm = mp.Process(target=normalize_all, args=(normalize,))
+        hide = mp.Process(target=hide_window)
+        norm.start()
+        hide.start()
+        norm.join()
+        hide.join()
+    if get_value('normalize_dubbers'):
+        norm = mp.Process(
+            target=normalize_dubbers,
+            args=(normalize, video_item)
+        )
+        hide = mp.Process(target=hide_window)
+        norm.start()
+        hide.start()
+        norm.join()
+        hide.join()
+    if get_value('normalize_video'):
+        norm = mp.Process(
+            target=normalize_video,
+            args=(normalize, video_item)
+        )
+        hide = mp.Process(target=hide_window)
+        norm.start()
+        hide.start()
+        norm.join()
+        hide.join()
 
 
-def import_subs(subs: List[str], project: reapy.Project) -> None:
-    """Функция для добавления субтитров"""
-    value = get_value('sub_region')
-    if value:
-        if len(subs) > 1:
-            tkinter.messagebox.showinfo(
-                    'Много Субтитров',
-                    'В рабочей папке есть несколько субтитров.'
-                    'Выберите вручную'
-                )
-            manual_import = RPR.NamedCommandLookup('_S&M_IMPORT_SUBTITLE')
-            RPR.Main_OnCommand(manual_import, 0)
-        else:
-            try:
-                if subs[0]:
-                    subtitles = pysubs2.load(subs[0])
-                    for sub in subtitles:
-                        start = sub.start / 1000
-                        end = sub.end / 1000
-                        project.add_region(
-                            start, end, sub.text, (70, 130, 180)
-                        )
-            except IndexError:
-                pass
-
-
-def import_subs_items(subs: List[str], project: reapy.Project) -> None:
-    """Функция для добавления субтитров"""
-    value = get_value('sub_item')
-    if value:
-        if len(subs) > 1:
-            tkinter.messagebox.showinfo(
-                    'Много Субтитров',
-                    'В рабочей папке есть несколько субтитров.'
-                    'Выберите вручную'
-                )
-            manual_import = RPR.NamedCommandLookup(
-                '_RS398914b91b39e76d27f9104907036794594b836a'
+def subs_generator(
+        project: reapy.Project,
+        sbttls: pysubs2.SSAFile,
+        strt_idx: int,
+        end_idx: int,
+        flag: str
+        ) -> None:
+    for i in range(strt_idx, end_idx):
+        start = sbttls[i].start / 1000
+        end = sbttls[i].end / 1000
+        if flag == 'region':
+            project.add_region(
+                start, end, sbttls[i].text, (147, 112, 219)
             )
-            RPR.Main_OnCommand(manual_import, 0)
-        else:
-            try:
-                if subs[0]:
-                    subtitles = pysubs2.load(subs[0])
-                    for sub in subtitles:
-                        start = sub.start / 1000
-                        end = sub.end / 1000
-                        item = project.tracks[1].add_item(start, end)
-                        RPR.ULT_SetMediaItemNote(item.id, sub.text)
-            except IndexError:
-                pass
+        elif flag == 'item':
+            item = project.tracks[1].add_item(start, end)
+            RPR.ULT_SetMediaItemNote(item.id, sbttls[i].text)
+
+
+def import_subs(subs: List[str], project: reapy.Project) -> List[List[float]]:
+    if subs and (get_value('sub_region') or get_value('sub_item')):
+        sbttls = pysubs2.load(subs[0])
+        mid = len(sbttls) // 2
+        if get_value('sub_region'):
+            subs_gen_1 = (
+                mp.Process(
+                    target=subs_generator,
+                    args=(
+                        project, sbttls, 0, mid,
+                        'region'
+                    )
+                )
+            )
+            subs_gen_2 = (
+                mp.Process(
+                    target=subs_generator,
+                    args=(
+                        project, sbttls, mid, len(sbttls),
+                        'region'
+                    )
+                )
+            )
+            subs_gen_1.start()
+            subs_gen_2.start()
+            subs_gen_1.join()
+            subs_gen_2.join()
+        if get_value('sub_item'):
+            subs_gen_1 = (
+                mp.Process(
+                    target=subs_generator,
+                    args=(
+                        project, sbttls, 0, mid,
+                        'item'
+                    )
+                )
+            )
+            subs_gen_2 = (
+                mp.Process(
+                    target=subs_generator,
+                    args=(
+                        project, sbttls, mid, len(sbttls),
+                        'item'
+                    )
+                )
+            )
+            subs_gen_1.start()
+            subs_gen_2.start()
+            subs_gen_1.join()
+            subs_gen_2.join()
 
 
 def list_generator(
@@ -588,11 +651,10 @@ def fix_check(project: reapy.Project) -> None:
     """Функция для проверки на пропуски и наложения"""
     value = get_value('fix_check')
     if value:
-        track = RPR.GetTrack(0, 1)
-        subs_enum = RPR.CountTrackMediaItems(track)
-        items_enum = RPR.CountMediaItems(0)
+        subs_enum = project.tracks[1].n_items
+        items_enum = project.n_items
         subs_list = [[float] * 2] * subs_enum
-        items_list = [[float] * 2] * (items_enum - subs_enum)
+        items_list = [[float] * 2] * (items_enum - subs_enum - 1)
         queue_subs = mp.Queue()
         queue_items = mp.Queue()
         checked_subs = []
@@ -603,7 +665,7 @@ def fix_check(project: reapy.Project) -> None:
         )
         items_list_gen = mp.Process(
             target=list_generator,
-            args=(0, (subs_enum + 1), (items_enum + 1),
+            args=(0, (subs_enum + 1), items_enum,
                   items_list, queue_items)
         )
         subs_list_gen.start()
@@ -750,10 +812,9 @@ def main():
     audio_select(flac_audio, wav_audio)
     video_select(mkv_video, mp4_video)
     split(project.items[0].id)
-    import_subs_items(subs, project)
     import_subs(subs, project)
     project.save(False)
-    normalize(project.items[0].id)
+    hidden_normalize(project.items[0].id)
     project.save(False)
     fix_check(project)
     render(folder)
