@@ -47,6 +47,10 @@ def save_options(
     master.destroy()
 
 
+def on_closing():
+    raise SystemExit
+
+
 def create_widgets(
         OPTIONS: list,
         master: tkinter.Tk,
@@ -120,13 +124,25 @@ def create_widgets(
 def checkbox_window() -> None:
     """Функция для создания окна выбора конфигураций"""
     master = tkinter.Tk()
-    master.geometry('380x390')
+    width = 380
+    height = 390
+    s_width = master.winfo_screenwidth()
+    s_height = master.winfo_screenheight()
+    upper = s_height // 7
+    x = (s_width - width) // 2
+    y = (s_height - height) // 2
+    master.geometry(f'{width}x{height}+{x}+{y - upper}')
     master.resizable(width=False, height=False)
+    width = master.winfo_screenwidth()
+    height = master.winfo_screenheight()
+    x = (width - 380) // 2
+    y = (height - 390) // 2
     master.title('Выберите нужные опции')
-    img = Image.open("background.png")
+    img = Image.open('background.png')  # 'C:/Dev/ReaperScript/background.png'
     tk_img = ImageTk.PhotoImage(img)
     background_label = tkinter.Label(master, image=tk_img)
     background_label.place(x=0, y=0, relwidth=1, relheight=1)
+    master.protocol('WM_DELETE_WINDOW', on_closing)
     OPTIONS = [
         'split',
         'normalize',
