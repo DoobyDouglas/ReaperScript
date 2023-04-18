@@ -17,8 +17,6 @@ from window_works import (
 import multiprocessing as mp
 import tkinter.messagebox
 import subprocess
-import pyperclip
-import keyboard
 import pysubs2
 import tkinter
 import ffmpeg
@@ -27,6 +25,8 @@ import shutil
 import reapy
 import time
 import os
+import win32gui
+import win32con
 
 
 def reaper_check() -> None:
@@ -357,18 +357,25 @@ def render(folder: str) -> None:
     """Функция для рендеринга файла"""
     if get_value('render_audio'):
         reapy.perform_action(40015)
-        time.sleep(0.1)
-        pyperclip.copy('audio')
-        keyboard.press_and_release('ctrl+v')
-        time.sleep(0.1)
-        for _ in range(34):
-            keyboard.send('tab')
-            time.sleep(0.01)
-        render_path = folder.replace('/', '\\') + '\\'
-        pyperclip.copy(render_path)
-        keyboard.press_and_release('ctrl+v')
-        time.sleep(0.5)
-        keyboard.send('enter')
+        folder = os.path.normpath(folder)
+        hwnd = win32gui.FindWindow('#32770', 'Render to File')
+        while not hwnd:
+            time.sleep(0.1)
+            hwnd = win32gui.FindWindow('#32770', 'Render to File')
+        child_hwnd = win32gui.FindWindowEx(hwnd, None, 'Static', 'File name:')
+        file_name_hwnd = win32gui.GetWindow(child_hwnd, win32con.GW_HWNDNEXT)
+        file_name_buffer = ctypes.create_unicode_buffer('audio')
+        win32gui.SendMessage(
+            file_name_hwnd, win32con.WM_SETTEXT, None, file_name_buffer
+        )
+        child_hwnd = win32gui.FindWindowEx(hwnd, None, 'Static', 'Directory:')
+        directory_hwnd = win32gui.GetWindow(child_hwnd, win32con.GW_HWNDNEXT)
+        directory_buffer = ctypes.create_unicode_buffer(folder)
+        win32gui.SendMessage(
+            directory_hwnd, win32con.WM_SETTEXT, None, directory_buffer
+        )
+        render = win32gui.GetDlgItem(hwnd, 1)
+        win32gui.SendMessage(render, win32con.BM_CLICK, 0, 0)
 
 
 def back_up(project: reapy.Project, new_path: str) -> None:
