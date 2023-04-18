@@ -1,7 +1,6 @@
-import reapy
 from reapy import reascript_api as RPR
-import datetime
 import multiprocessing as mp
+import reapy
 
 
 def list_generator(position, strt_idx, end_idx, list, queue):
@@ -26,7 +25,7 @@ def fix_check():
     subs_enum = RPR.CountTrackMediaItems(track)
     items_enum = RPR.CountMediaItems(0)
     subs_list = [[float] * 2] * subs_enum
-    items_list = [[float] * 2] * (items_enum - subs_enum)
+    items_list = [[float] * 2] * (items_enum - subs_enum - 1)
     queue_subs = mp.Queue()
     queue_items = mp.Queue()
     checked_subs = []
@@ -37,7 +36,7 @@ def fix_check():
     )
     items_list_gen = mp.Process(
         target=list_generator,
-        args=(0, (subs_enum + 1), (items_enum + 1), items_list, queue_items)
+        args=(0, (subs_enum + 1), items_enum, items_list, queue_items)
     )
     subs_list_gen.start()
     items_list_gen.start()
@@ -79,7 +78,7 @@ def fix_check():
             for j in items_list:
                 if j != i and j not in dubbles_items:
                     if j[0] <= middle <= j[1]:
-                        project.add_marker(j[0], 'DUBBLE', (128, 255, 255))
+                        project.add_marker(j[0], 'DUBBLE', (0, 255, 255))
                         dubbles_items.append(j)
     for s in subs_list:
         if s not in checked_subs:
