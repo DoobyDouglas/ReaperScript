@@ -6,4 +6,3 @@ FFmpeg нужно прописать в PATH
 
 После конфигурации REAPER, можно упаковать программу в .exe с помощью pyinstaller
 
-Файл script.exe будет по адресу dist\script\
