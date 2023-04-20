@@ -481,7 +481,7 @@ height = master.winfo_screenheight()
 x = (width - 380) // 2
 y = (height - 390) // 2
 master.title('Выберите нужные опции')
-img = Image.open('C:/Dev/ReaperScript/background.png')
+img = Image.open('background.png')
 tk_img = ImageTk.PhotoImage(img)
 background_label = tkinter.Label(master, image=tk_img)
 background_label.place(x=0, y=0, relwidth=1, relheight=1)
