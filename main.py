@@ -1,16 +1,14 @@
 # Команду ниже нужно ввести один раз в консоли с включенным Reaper.
 # python -c "import reapy; reapy.configure_reaper()"
-# pyinstaller --onefile --noconsole --hidden-import=asstosrt
-from file_works import file_works, get_path_to_files
+# pyinstaller --noconfirm --onefile --noconsole --hidden-import=asstosrt
+from file_works import file_works, reaper_check, path_choice, get_fx_chains
 from multiprocessing import freeze_support
 from reapy import reascript_api as RPR
-from tkinter import filedialog
 from typing import List, Dict
 from PIL import Image, ImageTk
 from config_works import (
     get_config,
     load_path,
-    save_path,
     get_option,
     save_options,
 )
@@ -29,49 +27,6 @@ import win32gui
 import win32con
 
 
-def reaper_check() -> None:
-    """Функция для создания путей к компонентам REAPER"""
-    reaper_path = load_path('reaper_path')
-    if not reaper_path:
-        reaper_path = filedialog.askopenfilename(
-            title='Выберите файл reaper.exe'
-        )
-        save_path('reaper_path', reaper_path)
-    project_path = load_path('project_path')
-    if not project_path:
-        project_path = filedialog.askopenfilename(
-            title='Выберите файл шаблона проекта REAPER'
-        )
-        save_path('project_path', project_path)
-    fx_chains_folder = load_path('fx_chains_folder')
-    if not fx_chains_folder:
-        fx_chains_folder = filedialog.askdirectory(
-            title='Выберите папку с цепями эффектов'
-        )
-        save_path('fx_chains_folder', fx_chains_folder)
-
-
-def choice_folder() -> str:
-    """Функция для выбора рабочей папки с эпизодом"""
-    folder = filedialog.askdirectory(
-        title='Выберите рабочую папку с эпизодом'
-    )
-    return folder
-
-
-# Если имена состоят из нескольких слов, названия цепей нужно писать через "_"
-def get_fx_chains() -> Dict[str, str]:
-    """Функция создания словаря из дабберов и названий их цепей эффектов"""
-    fx_dict = {}
-    fx_chains_folder = load_path('fx_chains_folder')
-    fx_chains = get_path_to_files(fx_chains_folder, '*.RfxChain')
-    for chain in fx_chains:
-        fx_chain_name = chain.split('\\')[-1]
-        dubber_name = fx_chain_name.split('.')[-2].lower()
-        fx_dict[dubber_name] = fx_chain_name
-    return fx_dict
-
-
 def audio_select(audio: List[str]) -> None:
     """Функция для добавления аудио"""
     fx_chains_dict = get_fx_chains()
@@ -80,10 +35,11 @@ def audio_select(audio: List[str]) -> None:
         track = reapy.get_last_touched_track()
         if get_option('volume_up_dubbers'):
             track.items[0].set_info_value('D_VOL', 1.5)
-        for name in fx_chains_dict:
-            if name in file.split('\\')[-1].lower():
-                track.add_fx(fx_chains_dict[name])
-                track.set_info_string('P_NAME', name.upper())
+        if fx_chains_dict:
+            for name in fx_chains_dict:
+                if name in file.split('\\')[-1].lower():
+                    track.add_fx(fx_chains_dict[name])
+                    track.set_info_string('P_NAME', name.upper())
 
 
 # Использует послендий пресет сплита
@@ -114,7 +70,7 @@ def hide_window():
         hwnd = win32gui.FindWindow(
             '#32770', 'SWS/BR - Normalizing loudness...'
         )
-    win32gui.ShowWindow(hwnd, 2)  # 0 полностью, 2 свернуть
+    win32gui.ShowWindow(hwnd, 0)  # 0 полностью, 2 свернуть
 
 
 def normalize_all(command: int, project: reapy.Project) -> None:
@@ -433,33 +389,31 @@ def reaper_main(
     """Основная функция"""
     save_options(checkboxes, text_input)
     reaper_check()
-    folder = filedialog.askdirectory(
-        title='Выберите рабочую папку с эпизодом'
-    )
+    folder = path_choice('folder')
     subs, audio, video, title, number, ext = file_works(folder)
     if audio and video:
         master.withdraw()
-    new_path = project_save(folder, title, number)
-    reaper_path = load_path('reaper_path')
-    subprocess.run([reaper_path, new_path])
-    project = reapy.Project()
-    audio_select(audio)
-    RPR.InsertMedia(video[0], 512 | 0)
-    project.save(False)
-    if get_option('split'):
-        split(project)
-    if subs and (get_option('sub_region') or get_option('sub_item')):
-        import_subs(subs, project)
-    project.save(False)
-    hidden_normalize(project)
-    back_up(project, new_path)
-    fix_check(project)
-    project.save(False)
-    render(folder)
-    project.save(False)
-    reaper_close(folder)
-    make_episode(video, folder, title, number, ext)
-    master.wm_deiconify()
+        new_path = project_save(folder, title, number)
+        reaper_path = load_path('reaper_path')
+        subprocess.run([reaper_path, new_path])
+        project = reapy.Project()
+        audio_select(audio)
+        RPR.InsertMedia(video[0], 512 | 0)
+        project.save(False)
+        if get_option('split'):
+            split(project)
+        if subs and (get_option('sub_region') or get_option('sub_item')):
+            import_subs(subs, project)
+        project.save(False)
+        hidden_normalize(project)
+        back_up(project, new_path)
+        fix_check(project)
+        project.save(False)
+        render(folder)
+        project.save(False)
+        reaper_close(folder)
+        make_episode(video, folder, title, number, ext)
+        master.wm_deiconify()
 
 
 def on_closing():
@@ -468,7 +422,7 @@ def on_closing():
 
 master = tkinter.Tk()
 width = 380
-height = 390
+height = 440
 s_width = master.winfo_screenwidth()
 s_height = master.winfo_screenheight()
 upper = s_height // 8
@@ -481,7 +435,7 @@ height = master.winfo_screenheight()
 x = (width - 380) // 2
 y = (height - 390) // 2
 master.title('Выберите нужные опции')
-img = Image.open('background.png')
+img = Image.open('C:/Dev/ReaperScript/background.png')
 tk_img = ImageTk.PhotoImage(img)
 background_label = tkinter.Label(master, image=tk_img)
 background_label.place(x=0, y=0, relwidth=1, relheight=1)
@@ -560,6 +514,48 @@ save_button = tkinter.Button(
     command=lambda: reaper_main(checkboxes, master, text_input)
 )
 save_button.place(relx=0.5, rely=1.0, anchor="s", y=-9)
+reaper_exe = tkinter.Button(
+    master,
+    text='REAPER',
+    background='#9b93b3',
+    activebackground='#9b93b3',
+    command=lambda: path_choice('reaper_path')
+)
+reaper_exe.grid(
+    row=(len(OPTIONS) + 1),
+    column=0,
+    sticky=tkinter.W,
+    padx=6,
+    pady=3
+    )
+template = tkinter.Button(
+    master,
+    text='TEMPLATE',
+    background='#9b93b3',
+    activebackground='#9b93b3',
+    command=lambda: path_choice('project_path')
+)
+template.grid(
+    row=(len(OPTIONS) + 2),
+    column=0,
+    sticky=tkinter.W,
+    padx=6,
+    pady=3
+    )
+rfxchains = tkinter.Button(
+    master,
+    text='RFXCHAINS',
+    background='#9b93b3',
+    activebackground='#9b93b3',
+    command=lambda: path_choice('fx_chains_folder')
+)
+rfxchains.grid(
+    row=(len(OPTIONS) + 3),
+    column=0,
+    sticky=tkinter.W,
+    padx=6,
+    pady=3
+    )
 
 
 # Чтобы Reaper API подгрузился, Reaper должен быть включен при запуске скрипта
