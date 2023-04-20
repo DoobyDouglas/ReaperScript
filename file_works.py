@@ -172,7 +172,7 @@ def subs_edit(subs: List[str], flag: str) -> None:
 
 def file_works(folder: str) -> (
         Tuple[List[str], List[str], List[str], str, str, str]
-        ):
+        ) or None:
     """Функция для подготовки файлов к работе"""
     if not folder:
         tkinter.messagebox.showerror('Ошибка', NO_FOLDER)

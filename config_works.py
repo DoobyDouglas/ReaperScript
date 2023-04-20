@@ -32,17 +32,15 @@ def load_path(name: str) -> str or None:
 
 def save_options(
         checkboxes: Dict[str, str],
-        master: tkinter.Tk,
-        config: configparser.ConfigParser,
         text_input: tkinter.Entry
         ) -> None:
     """Функция для сохранения конфигураций"""
+    config = get_config()
     for option, var in checkboxes.items():
         config['OPTIONS'][option] = str(var.get())
     config['OUTPUT']['audio_output_format'] = text_input.get()
     with open('config.ini', 'w', encoding='utf-8') as config_file:
         config.write(config_file)
-    #master.destroy()
 
 
 def get_option(name: str) -> str or bool:
