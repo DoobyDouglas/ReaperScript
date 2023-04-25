@@ -1,5 +1,6 @@
 from typing import List, Tuple, Dict
 from tkinter import filedialog
+from ffmpeg._run import Error
 import tkinter.messagebox
 import asstosrt
 import pysubs2
@@ -110,11 +111,14 @@ def subs_extract(
         folder: str, video: List[str], param: str, mapping: str
         ) -> None:
     """Функция для извлечения субтитров из видео"""
-    video_path = video[0].replace('\\', '/')
-    input_file = ffmpeg.input(video_path)
-    output_file = f'{folder}/subs.{param}'
-    output = ffmpeg.output(input_file, output_file, map=mapping)
-    ffmpeg.run(output)
+    try:
+        video_path = video[0].replace('\\', '/')
+        input_file = ffmpeg.input(video_path)
+        output_file = f'{folder}/subs.{param}'
+        output = ffmpeg.output(input_file, output_file, map=mapping)
+        ffmpeg.run(output)
+    except Error:
+        pass
 
 
 def ass_sub_convert(folder: str, subs: List[str]) -> None:
@@ -153,7 +157,7 @@ def video_rename(
         return video, title, number, ext
     except PermissionError:
         tkinter.messagebox.showerror('Файл используется', IN_USE)
-        return None
+        return None, None, None, None
 
 
 def audio_rename(folder: str, audio: List[str], ext: str) -> List[str] or None:

@@ -1,8 +1,16 @@
 # Команду ниже нужно ввести один раз в консоли с включенным Reaper.
 # python -c "import reapy; reapy.configure_reaper()"
-# pyinstaller --noconfirm --onefile --noconsole --hidden-import=asstosrt
-from file_works import file_works, reaper_check, path_choice, get_fx_chains
+# pyinstaller --noconfirm --onefile --noconsole --hidden-import=asstosrt main.py
+from file_works import (
+    file_works,
+    reaper_check,
+    path_choice,
+    get_fx_chains,
+    get_path_to_files
+)
 from multiprocessing import freeze_support
+from check_standalone import fix_checker
+from threading import Thread
 from reapy import reascript_api as RPR
 from typing import List, Dict
 from PIL import Image, ImageTk
@@ -12,6 +20,7 @@ from config_works import (
     get_option,
     save_options,
 )
+from window_utils import on_closing, buttons_freeze, buttons_active
 import multiprocessing as mp
 import tkinter.messagebox
 import subprocess
@@ -45,7 +54,6 @@ def audio_select(audio: List[str]) -> None:
 # Использует послендий пресет сплита
 def split(project: reapy.Project) -> None:
     """Функция для разделения дорог на айтемы"""
-    project.select_all_items()
     RPR.SetMediaItemSelected(project.items[0].id, False)
     reapy.perform_action(40760)
     hwnd = win32gui.FindWindow(
@@ -148,55 +156,58 @@ def subs_generator(
             RPR.ULT_SetMediaItemNote(item.id, sbttls[i].text)
 
 
-def import_subs(subs: List[str], project: reapy.Project) -> None:
+def import_subs_regions(subs: List[str], project: reapy.Project) -> None:
     sbttls = pysubs2.load(subs[0])
     mid = len(sbttls) // 2
-    if get_option('sub_region'):
-        subs_gen_1 = (
-            mp.Process(
-                target=subs_generator,
-                args=(
-                    project, sbttls, 0, mid,
-                    'region'
-                )
+    subs_gen_1 = (
+        mp.Process(
+            target=subs_generator,
+            args=(
+                project, sbttls, 0, mid,
+                'region'
             )
         )
-        subs_gen_2 = (
-            mp.Process(
-                target=subs_generator,
-                args=(
-                    project, sbttls, mid, len(sbttls),
-                    'region'
-                )
+    )
+    subs_gen_2 = (
+        mp.Process(
+            target=subs_generator,
+            args=(
+                project, sbttls, mid, len(sbttls),
+                'region'
             )
         )
-        subs_gen_1.start()
-        subs_gen_2.start()
-        subs_gen_1.join()
-        subs_gen_2.join()
-    if get_option('sub_item'):
-        subs_gen_1 = (
-            mp.Process(
-                target=subs_generator,
-                args=(
-                    project, sbttls, 0, mid,
-                    'item'
-                )
+    )
+    subs_gen_1.start()
+    subs_gen_2.start()
+    subs_gen_1.join()
+    subs_gen_2.join()
+
+
+def import_subs_items(subs: List[str], project: reapy.Project) -> None:
+    sbttls = pysubs2.load(subs[0])
+    mid = len(sbttls) // 2
+    subs_gen_1 = (
+        mp.Process(
+            target=subs_generator,
+            args=(
+                project, sbttls, 0, mid,
+                'item'
             )
         )
-        subs_gen_2 = (
-            mp.Process(
-                target=subs_generator,
-                args=(
-                    project, sbttls, mid, len(sbttls),
-                    'item'
-                )
+    )
+    subs_gen_2 = (
+        mp.Process(
+            target=subs_generator,
+            args=(
+                project, sbttls, mid, len(sbttls),
+                'item'
             )
         )
-        subs_gen_1.start()
-        subs_gen_2.start()
-        subs_gen_1.join()
-        subs_gen_2.join()
+    )
+    subs_gen_1.start()
+    subs_gen_2.start()
+    subs_gen_1.join()
+    subs_gen_2.join()
 
 
 def list_generator(
@@ -222,71 +233,70 @@ def list_generator(
     queue.put(list)
 
 
-def fix_check(project: reapy.Project) -> None:
+def fix_check(project: reapy.Project = None) -> None:
     """Функция для проверки на пропуски и наложения"""
-    if get_option('fix_check'):
-        subs_enum = project.tracks[1].n_items
-        items_enum = project.n_items
-        subs_list = [[float] * 2] * subs_enum
-        items_list = [[float] * 2] * (items_enum - subs_enum - 1)
-        queue_subs = mp.Queue()
-        queue_items = mp.Queue()
-        checked_subs = []
-        dubbles_items = []
-        subs_list_gen = mp.Process(
-            target=list_generator,
-            args=(0, 1, (subs_enum + 1), subs_list, queue_subs)
-        )
-        items_list_gen = mp.Process(
-            target=list_generator,
-            args=(0, (subs_enum + 1), items_enum,
-                  items_list, queue_items)
-        )
-        subs_list_gen.start()
-        items_list_gen.start()
-        subs_list = queue_subs.get()
-        items_list = queue_items.get()
-        subs_list_gen.join()
-        items_list_gen.join()
-        for s in subs_list:
-            lenght = s[1] - s[0]
-            for i in items_list:
-                middle = i[0] + ((i[1] - i[0]) / 2)
-                if i[0] >= s[0] and i[1] <= s[1]:
-                    checked_subs.append(s)
-                    break
-                elif i[0] <= s[0] and i[1] >= s[1]:
-                    checked_subs.append(s)
-                    break
-                elif i[0] < s[0] and (
-                        i[1] > s[0] and i[1] < s[1]
-                        ):
-                    if i[1] - s[0] >= lenght / 2.2:
-                        checked_subs.append(s)
-                        break
-                    elif s[0] < middle < s[1]:
-                        checked_subs.append(s)
-                        break
-                elif i[0] > s[0] and (
-                        i[0] < s[1] and i[1] > s[1]
-                        ):
-                    if s[1] - i[0] >= lenght / 2.2:
-                        checked_subs.append(s)
-                        break
-                    elif s[0] < middle < s[1]:
-                        checked_subs.append(s)
-                        break
+    subs_enum = project.tracks[1].n_items
+    items_enum = project.n_items
+    subs_list = [[float] * 2] * subs_enum
+    items_list = [[float] * 2] * (items_enum - subs_enum - 1)
+    queue_subs = mp.Queue()
+    queue_items = mp.Queue()
+    checked_subs = []
+    dubbles_items = []
+    subs_list_gen = mp.Process(
+        target=list_generator,
+        args=(0, 1, (subs_enum + 1), subs_list, queue_subs)
+    )
+    items_list_gen = mp.Process(
+        target=list_generator,
+        args=(0, (subs_enum + 1), items_enum,
+              items_list, queue_items)
+    )
+    subs_list_gen.start()
+    items_list_gen.start()
+    subs_list = queue_subs.get()
+    items_list = queue_items.get()
+    subs_list_gen.join()
+    items_list_gen.join()
+    for s in subs_list:
+        lenght = s[1] - s[0]
         for i in items_list:
-            if i not in dubbles_items:
-                middle = i[0] + ((i[1] - i[0]) / 2)
-                for j in items_list:
-                    if j != i and j not in dubbles_items:
-                        if j[0] <= middle <= j[1]:
-                            project.add_marker(j[0], 'DUBBLE', (128, 255, 255))
-                            dubbles_items.append(j)
-        for s in subs_list:
-            if s not in checked_subs:
-                project.add_marker(s[0], 'FIX', (255, 0, 255))
+            middle = i[0] + ((i[1] - i[0]) / 2)
+            if i[0] >= s[0] and i[1] <= s[1]:
+                checked_subs.append(s)
+                break
+            elif i[0] <= s[0] and i[1] >= s[1]:
+                checked_subs.append(s)
+                break
+            elif i[0] < s[0] and (
+                    i[1] > s[0] and i[1] < s[1]
+                    ):
+                if i[1] - s[0] >= lenght / 2.2:
+                    checked_subs.append(s)
+                    break
+                elif s[0] < middle < s[1]:
+                    checked_subs.append(s)
+                    break
+            elif i[0] > s[0] and (
+                    i[0] < s[1] and i[1] > s[1]
+                    ):
+                if s[1] - i[0] >= lenght / 2.2:
+                    checked_subs.append(s)
+                    break
+                elif s[0] < middle < s[1]:
+                    checked_subs.append(s)
+                    break
+    for i in items_list:
+        if i not in dubbles_items:
+            middle = i[0] + ((i[1] - i[0]) / 2)
+            for j in items_list:
+                if j != i and j not in dubbles_items:
+                    if j[0] <= middle <= j[1]:
+                        project.add_marker(j[0], 'DUBBLE', (128, 255, 255))
+                        dubbles_items.append(j)
+    for s in subs_list:
+        if s not in checked_subs:
+            project.add_marker(s[0], 'FIX', (255, 0, 255))
 
 
 def project_save(folder: str, title: str, number: str) -> str:
@@ -302,29 +312,30 @@ def project_save(folder: str, title: str, number: str) -> str:
 
 
 # Используется последний пресет рендера
-def render(folder: str) -> None:
+def render(folder: str) -> str:
     """Функция для рендеринга файла"""
-    if get_option('render_audio'):
-        reapy.perform_action(40015)
-        folder = os.path.normpath(folder)
+    reapy.perform_action(40015)
+    folder = os.path.normpath(folder)
+    hwnd = win32gui.FindWindow('#32770', 'Render to File')
+    while not hwnd:
+        time.sleep(0.1)
         hwnd = win32gui.FindWindow('#32770', 'Render to File')
-        while not hwnd:
-            time.sleep(0.1)
-            hwnd = win32gui.FindWindow('#32770', 'Render to File')
-        child_hwnd = win32gui.FindWindowEx(hwnd, None, 'Static', 'File name:')
-        file_name_hwnd = win32gui.GetWindow(child_hwnd, win32con.GW_HWNDNEXT)
-        file_name_buffer = ctypes.create_unicode_buffer('audio')
-        win32gui.SendMessage(
-            file_name_hwnd, win32con.WM_SETTEXT, None, file_name_buffer
-        )
-        child_hwnd = win32gui.FindWindowEx(hwnd, None, 'Static', 'Directory:')
-        directory_hwnd = win32gui.GetWindow(child_hwnd, win32con.GW_HWNDNEXT)
-        directory_buffer = ctypes.create_unicode_buffer(folder)
-        win32gui.SendMessage(
-            directory_hwnd, win32con.WM_SETTEXT, None, directory_buffer
-        )
-        render = win32gui.GetDlgItem(hwnd, 1)
-        win32gui.SendMessage(render, win32con.BM_CLICK, 0, 0)
+    child_hwnd = win32gui.FindWindowEx(hwnd, None, 'Static', 'File name:')
+    file_name_hwnd = win32gui.GetWindow(child_hwnd, win32con.GW_HWNDNEXT)
+    file_name_buffer = ctypes.create_unicode_buffer('audio')
+    win32gui.SendMessage(
+        file_name_hwnd, win32con.WM_SETTEXT, None, file_name_buffer
+    )
+    child_hwnd = win32gui.FindWindowEx(hwnd, None, 'Static', 'Directory:')
+    directory_hwnd = win32gui.GetWindow(child_hwnd, win32con.GW_HWNDNEXT)
+    directory_buffer = ctypes.create_unicode_buffer(folder)
+    win32gui.SendMessage(
+        directory_hwnd, win32con.WM_SETTEXT, None, directory_buffer
+    )
+    render = win32gui.GetDlgItem(hwnd, 1)
+    win32gui.SendMessage(render, win32con.BM_CLICK, 0, 0)
+    output_file = os.path.normpath(get_path_to_files(folder, 'audio.*')[0])
+    return output_file
 
 
 def back_up(project: reapy.Project, new_path: str) -> None:
@@ -337,62 +348,47 @@ def back_up(project: reapy.Project, new_path: str) -> None:
     RPR.Main_SaveProjectEx(project, back_up_path, 0)
 
 
-def reaper_close(folder: str) -> None:
-    """Функция для закрытия REAPER"""
-    if get_option('render_audio'):
-        time.sleep(2)
-        audio = f'{folder}/audio.wav'
-        old_file_size = os.path.getsize(audio)
-        time.sleep(3)
-        new_file_size = os.path.getsize(audio)
-        while old_file_size < new_file_size:
-            old_file_size = os.path.getsize(audio)
-            time.sleep(3)
-            new_file_size = os.path.getsize(audio)
-        time.sleep(2)
-        reapy.perform_action(40004)
-
-
 def make_episode(
         video: List[str],
         folder: str,
         title: str,
         number: str,
-        ext: str
+        ext: str,
+        output_file: str
         ) -> None:
     """Функция для создания видео с озвучкой"""
-    audio_ext = get_option('audio_output_format')
-    if get_option('render_video') and ext:
-        video_path = video[0].replace('\\', '/')
-        audio_path = f'{folder}/audio.{audio_ext}'
-        output_file = f'{folder}/{title} {number} DUB{ext}'
-        video_file = ffmpeg.input(video_path)
-        audio_file = ffmpeg.input(audio_path)
-        output_options = {
-            'vcodec': 'copy',
-            'acodec': 'aac',
-            'audio_bitrate': '256k',
-        }
-        output = ffmpeg.output(
-            video_file['v'],
-            audio_file['a'],
-            output_file,
-            **output_options)
-        ffmpeg.run(output)
+    video_path = os.path.normpath(video[0])
+    audio_path = output_file
+    output_file = f'{folder}/{title} {number} DUB{ext}'
+    video_file = ffmpeg.input(video_path)
+    audio_file = ffmpeg.input(audio_path)
+    output_options = {
+        'vcodec': 'copy',
+        'acodec': 'aac',
+        'audio_bitrate': '256k',
+    }
+    output = ffmpeg.output(
+        video_file['v'],
+        audio_file['a'],
+        output_file,
+        **output_options)
+    ffmpeg.run(output)
 
 
 def reaper_main(
         checkboxes: Dict[str, str],
         master: tkinter.Tk,
-        text_input: tkinter.Entry
+        BUTTONS: List
         ) -> None:
     """Основная функция"""
-    save_options(checkboxes, text_input)
+    save_options(checkboxes)
     reaper_check()
     folder = path_choice('folder')
+    if folder:
+        buttons_freeze(master, BUTTONS)
     subs, audio, video, title, number, ext = file_works(folder)
     if audio and video:
-        master.withdraw()
+        master.iconify()
         new_path = project_save(folder, title, number)
         reaper_path = load_path('reaper_path')
         subprocess.run([reaper_path, new_path])
@@ -402,27 +398,46 @@ def reaper_main(
         project.save(False)
         if get_option('split'):
             split(project)
-        if subs and (get_option('sub_region') or get_option('sub_item')):
-            import_subs(subs, project)
+        if subs and (get_option('sub_region')):
+            import_subs_regions(subs, project)
+        if subs and get_option('sub_item'):
+            import_subs_items(subs, project)
         project.save(False)
         hidden_normalize(project)
         back_up(project, new_path)
-        fix_check(project)
+        if get_option('fix_check'):
+            fix_check(project)
         project.save(False)
-        render(folder)
-        project.save(False)
-        reaper_close(folder)
-        make_episode(video, folder, title, number, ext)
-        master.wm_deiconify()
+        if get_option('render_audio'):
+            output_file = render(folder)
+            time.sleep(2)
+            old_file_size = os.path.getsize(output_file)
+            time.sleep(3)
+            new_file_size = os.path.getsize(output_file)
+            while old_file_size < new_file_size:
+                old_file_size = os.path.getsize(output_file)
+                time.sleep(3)
+                new_file_size = os.path.getsize(output_file)
+            time.sleep(2)
+            if get_option('render_video'):
+                make_episode(video, folder, title, number, ext, output_file)
+    buttons_active(master, BUTTONS)
+    master.wm_deiconify()
 
 
-def on_closing():
-    raise SystemExit
+def on_save_click(checkboxes: Dict, master: tkinter.Tk, BUTTONS: List):
+    thread = Thread(target=reaper_main, args=(checkboxes, master, BUTTONS))
+    thread.start()
+
+
+def on_fix_check_click(master: tkinter.Tk, BUTTONS: List):
+    thread = Thread(target=fix_checker, args=(master, BUTTONS))
+    thread.start()
 
 
 master = tkinter.Tk()
 width = 380
-height = 440
+height = 410
 s_width = master.winfo_screenwidth()
 s_height = master.winfo_screenheight()
 upper = s_height // 8
@@ -435,7 +450,7 @@ height = master.winfo_screenheight()
 x = (width - 380) // 2
 y = (height - 390) // 2
 master.title('Выберите нужные опции')
-img = Image.open('background.png')
+img = Image.open('C:/Dev/ReaperScript/background.png')
 tk_img = ImageTk.PhotoImage(img)
 background_label = tkinter.Label(master, image=tk_img)
 background_label.place(x=0, y=0, relwidth=1, relheight=1)
@@ -454,8 +469,6 @@ OPTIONS = [
 ]
 config = get_config()
 checkboxes = {}
-if 'OPTIONS' not in config:
-    config['OPTIONS'] = {}
 for i, option in enumerate(OPTIONS):
     var = tkinter.BooleanVar()
     if option in config['OPTIONS']:
@@ -477,46 +490,26 @@ for i, option in enumerate(OPTIONS):
         sticky=tkinter.W
     )
     checkboxes[option] = var
-if 'OUTPUT' not in config:
-    config['OUTPUT'] = {}
-label = tkinter.Label(
+BUTTONS = [
+    'start',
+    'reaper_exe',
+    'template',
+    'rfx',
+    'fix_check',
+]
+start_bttn = tkinter.Button(
     master,
-    text='Audio Output Format:',
-    background='#ffc0cb',
-)
-label.grid(
-    row=len(OPTIONS),
-    column=0,
-    sticky=tkinter.W,
-    padx=3,
-    pady=3
-)
-text_input = tkinter.Entry(
-    master,
-    width=6,
-    background='#ffffff',
-    bd=3
-)
-text_input.grid(
-    row=len(OPTIONS),
-    column=1,
-    sticky=tkinter.W,
-    padx=3,
-    pady=3
-    )
-if 'audio_output_format' in config['OUTPUT']:
-    text_input.insert(tkinter.END, config['OUTPUT']['audio_output_format'])
-save_button = tkinter.Button(
-    master,
-    text='Сохранить',
+    text='Запуск',
+    name='start',
     background='#9b93b3',
     activebackground='#9b93b3',
-    command=lambda: reaper_main(checkboxes, master, text_input)
+    command=lambda: on_save_click(checkboxes, master, BUTTONS)
 )
-save_button.place(relx=0.5, rely=1.0, anchor="s", y=-9)
+start_bttn.place(relx=0.5, rely=1.0, anchor="s", y=-9)
 reaper_exe = tkinter.Button(
     master,
     text='REAPER',
+    name='reaper_exe',
     background='#9b93b3',
     activebackground='#9b93b3',
     command=lambda: path_choice('reaper_path')
@@ -531,6 +524,7 @@ reaper_exe.grid(
 template = tkinter.Button(
     master,
     text='TEMPLATE',
+    name='template',
     background='#9b93b3',
     activebackground='#9b93b3',
     command=lambda: path_choice('project_path')
@@ -545,6 +539,7 @@ template.grid(
 rfxchains = tkinter.Button(
     master,
     text='RFXCHAINS',
+    name='rfx',
     background='#9b93b3',
     activebackground='#9b93b3',
     command=lambda: path_choice('fx_chains_folder')
@@ -556,7 +551,21 @@ rfxchains.grid(
     padx=6,
     pady=3
     )
-
+fix_check_button = tkinter.Button(
+    master,
+    text='FIXCHECK',
+    name='fix_check',
+    background='#9b93b3',
+    activebackground='#9b93b3',
+    command=lambda: on_fix_check_click(master, BUTTONS)
+)
+fix_check_button.place(relx=0.5, rely=1.0, anchor="s", x=150, y=-7)
+version = tkinter.Label(
+    master,
+    text='Версия 2.6',
+    background='#9b93b3',
+)
+version.place(relx=0.5, rely=1.0, anchor="s", x=150, y=-378)
 
 # Чтобы Reaper API подгрузился, Reaper должен быть включен при запуске скрипта
 if __name__ == '__main__':
