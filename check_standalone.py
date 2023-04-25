@@ -1,6 +1,9 @@
 from reapy import reascript_api as RPR
+from typing import List
 import multiprocessing as mp
 import reapy
+import tkinter
+from window_utils import buttons_freeze, buttons_active
 
 
 def list_generator(position, strt_idx, end_idx, list, queue):
@@ -19,7 +22,8 @@ def list_generator(position, strt_idx, end_idx, list, queue):
     queue.put(list)
 
 
-def fix_check():
+def fix_checker(master: tkinter.Tk, BUTTONS: List):
+    buttons_freeze(master, BUTTONS)
     project = reapy.Project()
     track = RPR.GetTrack(0, 1)
     subs_enum = RPR.CountTrackMediaItems(track)
@@ -83,7 +87,8 @@ def fix_check():
     for s in subs_list:
         if s not in checked_subs:
             project.add_marker(s[0], 'FIX', (255, 0, 255))
+    buttons_active(master, BUTTONS)
 
 
 if __name__ == '__main__':
-    fix_check()
+    fix_checker()

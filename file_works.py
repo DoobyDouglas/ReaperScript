@@ -1,4 +1,6 @@
-from typing import List, Tuple
+from typing import List, Tuple, Dict
+from tkinter import filedialog
+from ffmpeg._run import Error
 import tkinter.messagebox
 import asstosrt
 import pysubs2
@@ -7,11 +9,16 @@ import ffmpeg
 import glob
 import re
 import os
+from config_works import (
+    load_path,
+    save_path,
+)
 
-
-MANY_VIDEOS = 'Оставьте в рабочей папке только нужный видеофайл'
-NO_AUDIO = 'В рабочей папке нет аудиофайлов подходящего формата'
+MANY_VIDEO = 'Оставьте в рабочей папке только нужный видеофайл'
 MANY_SUBS = 'Оставьте в рабочей папке только нужный файл субтитров'
+NO_VIDEO = 'В рабочей папке нет видеофайлов подходящего формата'
+NO_AUDIO = 'В рабочей папке нет аудиофайлов подходящего формата'
+NO_FOLDER = 'Рабочая папка не выбрана'
 IN_USE = 'Закройте приложения использующие рабочие файлы'
 
 
@@ -20,12 +27,83 @@ def get_path_to_files(folder: str, extension: str) -> List[str]:
     return glob.glob(os.path.join(folder, extension))
 
 
-def subs_rename(folder: str, subs: List[str], number: str) -> List[str]:
+# Если имена состоят из нескольких слов, названия цепей нужно писать через "_"
+def get_fx_chains() -> Dict[str, str] or None:
+    """Функция создания словаря из дабберов и названий их цепей эффектов"""
+    fx_chains_folder = load_path('fx_chains_folder')
+    if fx_chains_folder:
+        fx_dict = {}
+        fx_chains = get_path_to_files(fx_chains_folder, '*.RfxChain')
+        for chain in fx_chains:
+            fx_chain_name = chain.split('\\')[-1]
+            dubber_name = fx_chain_name.split('.')[-2].lower()
+            fx_dict[dubber_name] = fx_chain_name
+        return fx_dict
+    return None
+
+
+def path_choice(name: str) -> str or None:
+    if name == 'reaper_path' or name == 'project_path':
+        if name == 'reaper_path':
+            defaultextension = 'exe'
+            filetypes = [('.exe', 'reaper.exe')]
+            initialdir = r'C:\Program Files\REAPER (x64)'
+            initialfile = r'C:\Program Files\REAPER (x64)\reaper.exe'
+            title = 'Выберите файл reaper.exe'
+        elif name == 'project_path':
+            defaultextension = 'rpp'
+            filetypes = [('.rpp', '*.rpp')]
+            initialdir = f'{os.getenv("APPDATA")}/REAPER/ProjectTemplates'
+            initialfile = None
+            title = 'Выберите файл шаблона проекта REAPER'
+        path = filedialog.askopenfilename(
+            defaultextension=defaultextension,
+            filetypes=filetypes,
+            initialdir=initialdir,
+            initialfile=initialfile,
+            title=title,
+        )
+    elif name == 'fx_chains_folder' or name == 'folder':
+        if name == 'fx_chains_folder':
+            title = 'Выберите папку с цепями эффектов'
+            initialdir = f'{os.getenv("APPDATA")}/REAPER/FXChains'
+        elif name == 'folder':
+            title = 'Выберите рабочую папку с эпизодом'
+            initialdir = None
+        path = filedialog.askdirectory(
+            title=title,
+            initialdir=initialdir,
+        )
+    if name != 'folder':
+        save_path(name, path)
+    else:
+        return path
+
+
+def reaper_check() -> None:
+    """Функция для создания путей к компонентам REAPER"""
+    reaper_path = load_path('reaper_path')
+    if not reaper_path:
+        path_choice('reaper_path')
+    project_path = load_path('project_path')
+    if not project_path:
+        path_choice('project_path')
+
+
+def subs_rename(
+        folder: str,
+        subs: List[str],
+        number: str
+        ) -> List[str] or None:
     """Функция для изменения имени субтитров"""
-    filenamae = os.path.splitext(subs[0])[0].split('\\')[-2]
-    new_name = f'{filenamae}/{number}.srt'
-    os.rename(subs[0], new_name)
-    subs = get_path_to_files(folder, '*.srt')
+    try:
+        filenamae = os.path.splitext(subs[0])[0].split('\\')[-2]
+        new_name = f'{filenamae}/{number}.srt'
+        os.rename(subs[0], new_name)
+        subs = get_path_to_files(folder, '*.srt')
+    except PermissionError:
+        tkinter.messagebox.showerror('Файл используется', IN_USE)
+        return None
     return subs
 
 
@@ -33,11 +111,14 @@ def subs_extract(
         folder: str, video: List[str], param: str, mapping: str
         ) -> None:
     """Функция для извлечения субтитров из видео"""
-    video_path = video[0].replace('\\', '/')
-    input_file = ffmpeg.input(video_path)
-    output_file = f'{folder}/subs.{param}'
-    output = ffmpeg.output(input_file, output_file, map=mapping)
-    ffmpeg.run(output)
+    try:
+        video_path = video[0].replace('\\', '/')
+        input_file = ffmpeg.input(video_path)
+        output_file = f'{folder}/subs.{param}'
+        output = ffmpeg.output(input_file, output_file, map=mapping)
+        ffmpeg.run(output)
+    except Error:
+        pass
 
 
 def ass_sub_convert(folder: str, subs: List[str]) -> None:
@@ -63,7 +144,7 @@ def vtt_sub_convert(folder: str, subs: List[str]) -> None:
 def video_rename(
         folder: str,
         video: List[str]
-    ) -> Tuple[List[str], str, str, str]:
+        ) -> Tuple[List[str], str, str, str] or None:
     """Функция для изменения имени видео"""
     number = os.path.basename(folder)
     title = folder.split('/')[-2]
@@ -76,10 +157,10 @@ def video_rename(
         return video, title, number, ext
     except PermissionError:
         tkinter.messagebox.showerror('Файл используется', IN_USE)
-        raise SystemExit
+        return None, None, None, None
 
 
-def audio_rename(folder: str, audio: List[str], ext: str) -> List[str]:
+def audio_rename(folder: str, audio: List[str], ext: str) -> List[str] or None:
     """Функция для изменения нечитаемых расширений"""
     for file in audio:
         file_ext = os.path.splitext(file)[-1]
@@ -96,7 +177,7 @@ def audio_rename(folder: str, audio: List[str], ext: str) -> List[str]:
                 os.rename(file, new_name)
             except PermissionError:
                 tkinter.messagebox.showerror('Файл используется', IN_USE)
-                raise SystemExit
+                return None
     fixed_audio = get_path_to_files(folder, f'*{ext}')
     return fixed_audio
 
@@ -161,14 +242,25 @@ def subs_edit(subs: List[str], flag: str) -> None:
 
 
 def file_works(folder: str) -> (
-        Tuple[List[str], List[str], List[str], str, str, str]
+        Tuple[List[str] or None,
+              List[str] or None,
+              List[str] or None,
+              str or None,
+              str or None,
+              str or None]
         ):
     """Функция для подготовки файлов к работе"""
+    if not folder:
+        tkinter.messagebox.showerror('Ошибка', NO_FOLDER)
+        return None, None, None, None, None, None
     mkv_video = get_path_to_files(folder, '*.mkv')
     mp4_video = get_path_to_files(folder, '*.mp4')
+    if not mkv_video and not mp4_video:
+        tkinter.messagebox.showerror('Нет видеофайлов', NO_VIDEO)
+        return None, None, None, None, None, None
     if (mkv_video and mp4_video) or len(mkv_video) > 1 or len(mp4_video) > 1:
-        tkinter.messagebox.showerror('Много видеофайлов', MANY_VIDEOS)
-        raise SystemExit
+        tkinter.messagebox.showerror('Много видеофайлов', MANY_VIDEO)
+        return None, None, None, None, None, None
     if mkv_video:
         video, title, number, ext = video_rename(folder, mkv_video)
     elif mp4_video:
@@ -177,7 +269,7 @@ def file_works(folder: str) -> (
     wav_audio = get_path_to_files(folder, '*.wav*')
     if not flac_audio and not wav_audio:
         tkinter.messagebox.showerror('Нет аудиофайлов', NO_AUDIO)
-        raise SystemExit
+        return None, None, None, None, None, None
     if flac_audio:
         flac_audio = audio_rename(folder, flac_audio, '.flac')
     if wav_audio:
@@ -186,7 +278,7 @@ def file_works(folder: str) -> (
     subs = get_path_to_files(folder, '*.srt')
     if len(subs) > 1:
         tkinter.messagebox.showerror('Много файлов субтитров', MANY_SUBS)
-        raise SystemExit
+        return None, None, None, None, None, None
     if subs:
         subs = subs_rename(folder, subs, number)
         subs_edit(subs, 'srt')
@@ -195,7 +287,7 @@ def file_works(folder: str) -> (
         vtt_subs = get_path_to_files(folder, '*.vtt')
         if (ass_subs and vtt_subs) or len(ass_subs) > 1 or len(vtt_subs) > 1:
             tkinter.messagebox.showerror('Много файлов субтитров', MANY_SUBS)
-            raise SystemExit
+            return None, None, None, None, None, None
         if vtt_subs:
             vtt_sub_convert(folder, vtt_subs)
         elif ass_subs:
