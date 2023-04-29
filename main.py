@@ -1,6 +1,6 @@
 # Команду ниже нужно ввести один раз в консоли с включенным Reaper.
 # python -c "import reapy; reapy.configure_reaper()"
-# pyinstaller --noconfirm --onefile --noconsole --hidden-import=asstosrt main.py
+# pyinstaller --noconfirm --onefile --noconsole --hidden-import=asstosrt --add-data 'background.png;.' main.py
 from file_works import (
     file_works,
     reaper_check,
@@ -20,7 +20,12 @@ from config_works import (
     get_option,
     save_options,
 )
-from window_utils import on_closing, buttons_freeze, buttons_active
+from window_utils import (
+    on_closing,
+    buttons_freeze,
+    buttons_active,
+    is_reaper_run
+)
 import multiprocessing as mp
 import tkinter.messagebox
 import subprocess
@@ -34,6 +39,7 @@ import time
 import os
 import win32gui
 import win32con
+import sys
 
 
 def audio_select(audio: List[str]) -> None:
@@ -435,6 +441,15 @@ def on_fix_check_click(master: tkinter.Tk, BUTTONS: List):
     thread.start()
 
 
+def resource_path(path):
+    try:
+        base_path = sys._MEIPASS
+    except Exception:
+        base_path = os.path.abspath('.')
+
+    return os.path.join(base_path, path)
+
+
 master = tkinter.Tk()
 width = 380
 height = 410
@@ -450,7 +465,7 @@ height = master.winfo_screenheight()
 x = (width - 380) // 2
 y = (height - 390) // 2
 master.title('Выберите нужные опции')
-img = Image.open('background.png')
+img = Image.open(resource_path('background.png'))
 tk_img = ImageTk.PhotoImage(img)
 background_label = tkinter.Label(master, image=tk_img)
 background_label.place(x=0, y=0, relwidth=1, relheight=1)
@@ -562,7 +577,7 @@ fix_check_button = tkinter.Button(
 fix_check_button.place(relx=0.5, rely=1.0, anchor="s", x=150, y=-7)
 version = tkinter.Label(
     master,
-    text='Версия 2.6',
+    text='Версия 2.7',
     background='#9b93b3',
 )
 version.place(relx=0.5, rely=1.0, anchor="s", x=150, y=-378)
@@ -570,4 +585,5 @@ version.place(relx=0.5, rely=1.0, anchor="s", x=150, y=-378)
 # Чтобы Reaper API подгрузился, Reaper должен быть включен при запуске скрипта
 if __name__ == '__main__':
     freeze_support()
+    is_reaper_run()
     master.mainloop()
