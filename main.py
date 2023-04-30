@@ -1,6 +1,6 @@
 # Команду ниже нужно ввести один раз в консоли с включенным Reaper.
 # python -c "import reapy; reapy.configure_reaper()"
-# pyinstaller --noconfirm --onefile --noconsole --hidden-import=asstosrt main.py
+# pyinstaller --noconfirm --onefile --noconsole --hidden-import=asstosrt --add-data 'background.png;.' main.py
 from file_works import (
     file_works,
     reaper_check,
@@ -20,7 +20,12 @@ from config_works import (
     get_option,
     save_options,
 )
-from window_utils import on_closing, buttons_freeze, buttons_active
+from window_utils import (
+    on_closing,
+    buttons_freeze,
+    buttons_active,
+    is_reaper_run
+)
 import multiprocessing as mp
 import tkinter.messagebox
 import subprocess
@@ -34,6 +39,7 @@ import time
 import os
 import win32gui
 import win32con
+import sys
 
 
 def audio_select(audio: List[str]) -> None:
@@ -60,6 +66,7 @@ def split(project: reapy.Project) -> None:
         '#32770',
         'Dynamic split items'
     )
+    win32gui.ShowWindow(hwnd, 0)
     split = win32gui.GetDlgItem(hwnd, 1)
     if split != 0:
         status = win32gui.IsWindowEnabled(split)
@@ -233,7 +240,7 @@ def list_generator(
     queue.put(list)
 
 
-def fix_check(project: reapy.Project = None) -> None:
+def fix_check(project: reapy.Project, subs: List[str]) -> None:
     """Функция для проверки на пропуски и наложения"""
     subs_enum = project.tracks[1].n_items
     items_enum = project.n_items
@@ -297,6 +304,51 @@ def fix_check(project: reapy.Project = None) -> None:
     for s in subs_list:
         if s not in checked_subs:
             project.add_marker(s[0], 'FIX', (255, 0, 255))
+    if subs:
+        dubbles_check(project, subs, items_list)
+
+
+def dubbles_check(
+        project: reapy.Project,
+        subs: List[str],
+        items_list: List
+        ) -> None:
+    sbttls = pysubs2.load(subs[0])
+    pattern = '- '
+    dbbl_sbs = {}
+    for i, sub in enumerate(sbttls):
+        if pattern in sub.text.lower():
+            dbbl_sbs[i] = [(sub.start / 1000), (sub.end / 1000), 0]
+    for s in dbbl_sbs:
+        lenght = dbbl_sbs[s][1] - dbbl_sbs[s][0]
+        for i in items_list:
+            middle = i[0] + ((i[1] - i[0]) / 2)
+            if i[0] >= dbbl_sbs[s][0] and i[1] <= dbbl_sbs[s][1]:
+                dbbl_sbs[s][2] += 1
+            elif i[0] <= dbbl_sbs[s][0] and i[1] >= dbbl_sbs[s][1]:
+                dbbl_sbs[s][2] += 1
+            elif i[0] < dbbl_sbs[s][0] and (
+                    i[1] > dbbl_sbs[s][0] and i[1] < dbbl_sbs[s][1]
+                    ):
+                if i[1] - dbbl_sbs[s][0] >= lenght / 2.2:
+                    dbbl_sbs[s][2] += 1
+                elif dbbl_sbs[s][0] < middle < dbbl_sbs[s][1]:
+                    dbbl_sbs[s][2] += 1
+            elif i[0] > dbbl_sbs[s][0] and (
+                    i[0] < dbbl_sbs[s][1] and i[1] > dbbl_sbs[s][1]
+                    ):
+                if dbbl_sbs[s][1] - i[0] >= lenght / 2.2:
+                    dbbl_sbs[s][2] += 1
+                elif dbbl_sbs[s][0] < middle < dbbl_sbs[s][1]:
+                    dbbl_sbs[s][2] += 1
+    for s in dbbl_sbs:
+        if dbbl_sbs[s][2] < 2:
+            project.add_region(
+                dbbl_sbs[s][0],
+                dbbl_sbs[s][1],
+                'DUBBLE HERE',
+                (255, 255, 0)
+            )
 
 
 def project_save(folder: str, title: str, number: str) -> str:
@@ -391,6 +443,8 @@ def reaper_main(
         master.iconify()
         new_path = project_save(folder, title, number)
         reaper_path = load_path('reaper_path')
+        hwnd = win32gui.FindWindow('REAPERwnd', None)
+        win32gui.ShowWindow(hwnd, 2)
         subprocess.run([reaper_path, new_path])
         project = reapy.Project()
         audio_select(audio)
@@ -406,7 +460,7 @@ def reaper_main(
         hidden_normalize(project)
         back_up(project, new_path)
         if get_option('fix_check'):
-            fix_check(project)
+            fix_check(project, subs)
         project.save(False)
         if get_option('render_audio'):
             output_file = render(folder)
@@ -435,6 +489,15 @@ def on_fix_check_click(master: tkinter.Tk, BUTTONS: List):
     thread.start()
 
 
+def resource_path(path):
+    try:
+        base_path = sys._MEIPASS
+    except Exception:
+        base_path = os.path.abspath('.')
+
+    return os.path.join(base_path, path)
+
+
 master = tkinter.Tk()
 width = 380
 height = 410
@@ -450,7 +513,7 @@ height = master.winfo_screenheight()
 x = (width - 380) // 2
 y = (height - 390) // 2
 master.title('Выберите нужные опции')
-img = Image.open('background.png')
+img = Image.open(resource_path('background.png'))
 tk_img = ImageTk.PhotoImage(img)
 background_label = tkinter.Label(master, image=tk_img)
 background_label.place(x=0, y=0, relwidth=1, relheight=1)
@@ -562,7 +625,7 @@ fix_check_button = tkinter.Button(
 fix_check_button.place(relx=0.5, rely=1.0, anchor="s", x=150, y=-7)
 version = tkinter.Label(
     master,
-    text='Версия 2.6',
+    text='Версия 2.9',
     background='#9b93b3',
 )
 version.place(relx=0.5, rely=1.0, anchor="s", x=150, y=-378)
@@ -570,4 +633,5 @@ version.place(relx=0.5, rely=1.0, anchor="s", x=150, y=-378)
 # Чтобы Reaper API подгрузился, Reaper должен быть включен при запуске скрипта
 if __name__ == '__main__':
     freeze_support()
+    is_reaper_run()
     master.mainloop()

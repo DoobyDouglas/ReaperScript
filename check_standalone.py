@@ -6,7 +6,10 @@ import tkinter
 from window_utils import buttons_freeze, buttons_active
 
 
-def list_generator(position, strt_idx, end_idx, list, queue):
+def list_generator(position, strt_idx, end_idx, list, queue, flag):
+    if flag == 'subs':
+        dbbl_sbs = {}
+        pattern = '- '
     for i in range(strt_idx, end_idx):
         item = RPR.GetMediaItem(0, i)
         start = RPR.GetMediaItemInfo_Value(
@@ -18,8 +21,15 @@ def list_generator(position, strt_idx, end_idx, list, queue):
             'D_LENGTH'
         )
         list[position] = [start, end]
+        if flag == 'subs':
+            text = RPR.ULT_GetMediaItemNote(item)
+            if pattern in text.lower():
+                dbbl_sbs[i] = [start, end, 0]
         position += 1
-    queue.put(list)
+    if flag == 'subs':
+        queue.put([list, dbbl_sbs])
+    else:
+        queue.put(list)
 
 
 def fix_checker(master: tkinter.Tk, BUTTONS: List):
@@ -36,18 +46,20 @@ def fix_checker(master: tkinter.Tk, BUTTONS: List):
     dubbles_items = []
     subs_list_gen = mp.Process(
         target=list_generator,
-        args=(0, 1, (subs_enum + 1), subs_list, queue_subs)
+        args=(0, 1, (subs_enum + 1), subs_list, queue_subs, 'subs')
     )
     items_list_gen = mp.Process(
         target=list_generator,
-        args=(0, (subs_enum + 1), items_enum, items_list, queue_items)
+        args=(0, (subs_enum + 1), items_enum, items_list, queue_items, 'items')
     )
     subs_list_gen.start()
     items_list_gen.start()
-    subs_list = queue_subs.get()
+    all_subs_list = queue_subs.get()
     items_list = queue_items.get()
     subs_list_gen.join()
     items_list_gen.join()
+    subs_list = all_subs_list[0]
+    dbbl_sbs = all_subs_list[1]
     for s in subs_list:
         lenght = s[1] - s[0]
         for i in items_list:
@@ -87,6 +99,36 @@ def fix_checker(master: tkinter.Tk, BUTTONS: List):
     for s in subs_list:
         if s not in checked_subs:
             project.add_marker(s[0], 'FIX', (255, 0, 255))
+    for s in dbbl_sbs:
+        lenght = dbbl_sbs[s][1] - dbbl_sbs[s][0]
+        for i in items_list:
+            middle = i[0] + ((i[1] - i[0]) / 2)
+            if i[0] >= dbbl_sbs[s][0] and i[1] <= dbbl_sbs[s][1]:
+                dbbl_sbs[s][2] += 1
+            elif i[0] <= dbbl_sbs[s][0] and i[1] >= dbbl_sbs[s][1]:
+                dbbl_sbs[s][2] += 1
+            elif i[0] < dbbl_sbs[s][0] and (
+                    i[1] > dbbl_sbs[s][0] and i[1] < dbbl_sbs[s][1]
+                    ):
+                if i[1] - dbbl_sbs[s][0] >= lenght / 2.2:
+                    dbbl_sbs[s][2] += 1
+                elif dbbl_sbs[s][0] < middle < dbbl_sbs[s][1]:
+                    dbbl_sbs[s][2] += 1
+            elif i[0] > dbbl_sbs[s][0] and (
+                    i[0] < dbbl_sbs[s][1] and i[1] > dbbl_sbs[s][1]
+                    ):
+                if dbbl_sbs[s][1] - i[0] >= lenght / 2.2:
+                    dbbl_sbs[s][2] += 1
+                elif dbbl_sbs[s][0] < middle < dbbl_sbs[s][1]:
+                    dbbl_sbs[s][2] += 1
+    for s in dbbl_sbs:
+        if dbbl_sbs[s][2] < 2:
+            project.add_region(
+                dbbl_sbs[s][0],
+                dbbl_sbs[s][1],
+                'DUBBLE HERE',
+                (255, 255, 0)
+            )
     buttons_active(master, BUTTONS)
 
 
