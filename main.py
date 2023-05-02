@@ -283,29 +283,46 @@ def list_generator(
 
 def fix_check(project: reapy.Project, subs: List[str]) -> None:
     """Функция для проверки на пропуски и наложения"""
-    subs_enum = project.tracks[1].n_items
+    sbttls = pysubs2.load(subs[0])
+    pattern = '- '
+    dbbl_sbs = {}
+    subs_enum = len(sbttls)
     items_enum = project.n_items
+    sub_items_enum = project.tracks[1].n_items
+    voice_items = items_enum - sub_items_enum - 1
+    items_mid = voice_items // 2
     subs_list = [[float] * 2] * subs_enum
-    items_list = [[float] * 2] * (items_enum - subs_enum - 1)
-    queue_subs = mp.Queue()
-    queue_items = mp.Queue()
+    items_list_1 = [[float] * 2] * items_mid
+    items_list_2 = [[float] * 2] * (voice_items - items_mid)
+    position = 0
+    for i, sub in enumerate(sbttls):
+        start = sub.start / 1000
+        end = sub.end / 1000
+        subs_list[position] = [start, end]
+        if pattern in sub.text.lower():
+            dbbl_sbs[i] = [(sub.start / 1000), (sub.end / 1000), 0]
+        position += 1
+    queue_1 = mp.Queue()
+    queue_2 = mp.Queue()
+    items_list_gen_1 = mp.Process(
+        target=list_generator,
+        args=(0, (sub_items_enum + 1), (sub_items_enum + 1 + items_mid),
+              items_list_1, queue_1)
+    )
+    items_list_gen_2 = mp.Process(
+        target=list_generator,
+        args=(0, (sub_items_enum + 1 + items_mid), items_enum,
+              items_list_2, queue_2)
+    )
+    items_list_gen_1.start()
+    items_list_gen_2.start()
+    items_list_1 = queue_1.get()
+    items_list_2 = queue_2.get()
+    items_list = list(items_list_1 + items_list_2)
+    items_list_gen_1.join()
+    items_list_gen_2.join()
     checked_subs = []
     dubbles_items = []
-    subs_list_gen = mp.Process(
-        target=list_generator,
-        args=(0, 1, (subs_enum + 1), subs_list, queue_subs)
-    )
-    items_list_gen = mp.Process(
-        target=list_generator,
-        args=(0, (subs_enum + 1), items_enum,
-              items_list, queue_items)
-    )
-    subs_list_gen.start()
-    items_list_gen.start()
-    subs_list = queue_subs.get()
-    items_list = queue_items.get()
-    subs_list_gen.join()
-    items_list_gen.join()
     for s in subs_list:
         lenght = s[1] - s[0]
         for i in items_list:
@@ -345,21 +362,6 @@ def fix_check(project: reapy.Project, subs: List[str]) -> None:
     for s in subs_list:
         if s not in checked_subs:
             project.add_marker(s[0], 'FIX', (255, 0, 255))
-    if subs:
-        dubbles_check(project, subs, items_list)
-
-
-def dubbles_check(
-        project: reapy.Project,
-        subs: List[str],
-        items_list: List
-        ) -> None:
-    sbttls = pysubs2.load(subs[0])
-    pattern = '- '
-    dbbl_sbs = {}
-    for i, sub in enumerate(sbttls):
-        if pattern in sub.text.lower():
-            dbbl_sbs[i] = [(sub.start / 1000), (sub.end / 1000), 0]
     for s in dbbl_sbs:
         lenght = dbbl_sbs[s][1] - dbbl_sbs[s][0]
         for i in items_list:
