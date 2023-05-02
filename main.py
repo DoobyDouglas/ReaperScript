@@ -163,15 +163,17 @@ def subs_generator(
             RPR.ULT_SetMediaItemNote(item.id, sbttls[i].text)
 
 
-def import_subs_regions(subs: List[str], project: reapy.Project) -> None:
+def import_subs(subs: List[str], project: reapy.Project, flag: str) -> None:
     sbttls = pysubs2.load(subs[0])
     mid = len(sbttls) // 2
+    four = mid // 2
+    eight = four // 2
     subs_gen_1 = (
         mp.Process(
             target=subs_generator,
             args=(
-                project, sbttls, 0, mid,
-                'region'
+                project, sbttls, 0, eight,
+                flag
             )
         )
     )
@@ -179,42 +181,81 @@ def import_subs_regions(subs: List[str], project: reapy.Project) -> None:
         mp.Process(
             target=subs_generator,
             args=(
-                project, sbttls, mid, len(sbttls),
-                'region'
+                project, sbttls, eight, four,
+                flag
+            )
+        )
+    )
+    subs_gen_3 = (
+        mp.Process(
+            target=subs_generator,
+            args=(
+                project, sbttls, four, (four + eight),
+                flag
+            )
+        )
+    )
+    subs_gen_4 = (
+        mp.Process(
+            target=subs_generator,
+            args=(
+                project, sbttls, (four + eight), mid,
+                flag
+            )
+        )
+    )
+    subs_gen_5 = (
+        mp.Process(
+            target=subs_generator,
+            args=(
+                project, sbttls, mid, (mid + eight),
+                flag
+            )
+        )
+    )
+    subs_gen_6 = (
+        mp.Process(
+            target=subs_generator,
+            args=(
+                project, sbttls, (mid + eight), (mid + four),
+                flag
+            )
+        )
+    )
+    subs_gen_7 = (
+        mp.Process(
+            target=subs_generator,
+            args=(
+                project, sbttls, (mid + four), (mid + four + eight),
+                flag
+            )
+        )
+    )
+    subs_gen_8 = (
+        mp.Process(
+            target=subs_generator,
+            args=(
+                project, sbttls, (mid + four + eight), len(sbttls),
+                flag
             )
         )
     )
     subs_gen_1.start()
     subs_gen_2.start()
+    subs_gen_3.start()
+    subs_gen_4.start()
+    subs_gen_5.start()
+    subs_gen_6.start()
+    subs_gen_7.start()
+    subs_gen_8.start()
     subs_gen_1.join()
     subs_gen_2.join()
-
-
-def import_subs_items(subs: List[str], project: reapy.Project) -> None:
-    sbttls = pysubs2.load(subs[0])
-    mid = len(sbttls) // 2
-    subs_gen_1 = (
-        mp.Process(
-            target=subs_generator,
-            args=(
-                project, sbttls, 0, mid,
-                'item'
-            )
-        )
-    )
-    subs_gen_2 = (
-        mp.Process(
-            target=subs_generator,
-            args=(
-                project, sbttls, mid, len(sbttls),
-                'item'
-            )
-        )
-    )
-    subs_gen_1.start()
-    subs_gen_2.start()
-    subs_gen_1.join()
-    subs_gen_2.join()
+    subs_gen_3.join()
+    subs_gen_4.join()
+    subs_gen_5.join()
+    subs_gen_6.join()
+    subs_gen_7.join()
+    subs_gen_8.join()
 
 
 def list_generator(
@@ -453,9 +494,9 @@ def reaper_main(
         if get_option('split'):
             split(project)
         if subs and (get_option('sub_region')):
-            import_subs_regions(subs, project)
+            import_subs(subs, project, 'region')
         if subs and get_option('sub_item'):
-            import_subs_items(subs, project)
+            import_subs(subs, project, 'item')
         project.save(False)
         hidden_normalize(project)
         back_up(project, new_path)
@@ -625,7 +666,7 @@ fix_check_button = tkinter.Button(
 fix_check_button.place(relx=0.5, rely=1.0, anchor="s", x=150, y=-7)
 version = tkinter.Label(
     master,
-    text='Версия 2.9',
+    text='Версия 3.0',
     background='#9b93b3',
 )
 version.place(relx=0.5, rely=1.0, anchor="s", x=150, y=-378)

@@ -144,7 +144,7 @@ def vtt_sub_convert(folder: str, subs: List[str]) -> None:
 def video_rename(
         folder: str,
         video: List[str]
-        ) -> Tuple[List[str], str, str, str] or None:
+        ) -> Tuple[List[str] or None, str or None, str or None, str or None]:
     """Функция для изменения имени видео"""
     number = os.path.basename(folder)
     title = folder.split('/')[-2]
