@@ -100,7 +100,6 @@ def fix_checker(master: tkinter.Tk, BUTTONS: List):
         if s not in checked_subs:
             project.add_marker(s[0], 'FIX', (255, 0, 255))
     for s in dbbl_sbs:
-        lenght = dbbl_sbs[s][1] - dbbl_sbs[s][0]
         for i in items_list:
             middle = i[0] + ((i[1] - i[0]) / 2)
             if i[0] >= dbbl_sbs[s][0] and i[1] <= dbbl_sbs[s][1]:
@@ -110,25 +109,14 @@ def fix_checker(master: tkinter.Tk, BUTTONS: List):
             elif i[0] < dbbl_sbs[s][0] and (
                     i[1] > dbbl_sbs[s][0] and i[1] < dbbl_sbs[s][1]
                     ):
-                if i[1] - dbbl_sbs[s][0] >= lenght / 2.2:
-                    dbbl_sbs[s][2] += 1
-                elif dbbl_sbs[s][0] < middle < dbbl_sbs[s][1]:
-                    dbbl_sbs[s][2] += 1
+                dbbl_sbs[s][2] += 1
             elif i[0] > dbbl_sbs[s][0] and (
                     i[0] < dbbl_sbs[s][1] and i[1] > dbbl_sbs[s][1]
                     ):
-                if dbbl_sbs[s][1] - i[0] >= lenght / 2.2:
-                    dbbl_sbs[s][2] += 1
-                elif dbbl_sbs[s][0] < middle < dbbl_sbs[s][1]:
-                    dbbl_sbs[s][2] += 1
+                dbbl_sbs[s][2] += 1
     for s in dbbl_sbs:
         if dbbl_sbs[s][2] < 2:
-            project.add_region(
-                dbbl_sbs[s][0],
-                dbbl_sbs[s][1],
-                'DUBBLE HERE',
-                (255, 255, 0)
-            )
+            project.add_marker(dbbl_sbs[s][0], 'DUBBLE HERE', (255, 255, 0))
     buttons_active(master, BUTTONS)
 
 
