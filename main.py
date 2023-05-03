@@ -386,12 +386,7 @@ def fix_check(project: reapy.Project, subs: List[str]) -> None:
                     dbbl_sbs[s][2] += 1
     for s in dbbl_sbs:
         if dbbl_sbs[s][2] < 2:
-            project.add_region(
-                dbbl_sbs[s][0],
-                dbbl_sbs[s][1],
-                'DUBBLE HERE',
-                (255, 255, 0)
-            )
+            project.add_marker(dbbl_sbs[s][0], 'DUBBLE HERE', (255, 255, 0))
 
 
 def project_save(folder: str, title: str, number: str) -> str:
