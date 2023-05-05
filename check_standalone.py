@@ -109,11 +109,13 @@ def fix_checker(master: tkinter.Tk, BUTTONS: List):
             elif i[0] < dbbl_sbs[s][0] and (
                     i[1] > dbbl_sbs[s][0] and i[1] < dbbl_sbs[s][1]
                     ):
-                dbbl_sbs[s][2] += 1
+                if dbbl_sbs[s][0] < middle < dbbl_sbs[s][1]:
+                    dbbl_sbs[s][2] += 1
             elif i[0] > dbbl_sbs[s][0] and (
                     i[0] < dbbl_sbs[s][1] and i[1] > dbbl_sbs[s][1]
                     ):
-                dbbl_sbs[s][2] += 1
+                if dbbl_sbs[s][0] < middle < dbbl_sbs[s][1]:
+                    dbbl_sbs[s][2] += 1
     for s in dbbl_sbs:
         if dbbl_sbs[s][2] < 2:
             project.add_marker(dbbl_sbs[s][0], 'DUBBLE HERE', (255, 255, 0))
