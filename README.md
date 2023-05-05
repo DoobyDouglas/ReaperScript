@@ -5,5 +5,6 @@ FFmpeg нужно прописать в PATH
 Включаем REAPER, в консоли пишем python -c "import reapy; reapy.configure_reaper()"
 
 После конфигурации REAPER, можно упаковать программу в .exe
+
 pyinstaller --noconfirm --onefile --noconsole --hidden-import=asstosrt --add-data 'background.png;.' main.py
 
