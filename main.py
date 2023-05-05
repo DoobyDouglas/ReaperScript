@@ -152,69 +152,43 @@ def subs_generator(
         flag: str
         ) -> None:
     for i in range(strt_idx, end_idx):
-        start = sbttls[i].start / 1000
-        end = sbttls[i].end / 1000
-        if flag == 'region':
-            project.add_region(
-                start, end, sbttls[i].text, (147, 112, 219)
-            )
-        elif flag == 'item':
-            item = project.tracks[1].add_item(start, end)
-            RPR.ULT_SetMediaItemNote(item.id, sbttls[i].text)
+        try:
+            start = sbttls[i].start / 1000
+            end = sbttls[i].end / 1000
+            if flag == 'region':
+                project.add_region(
+                    start, end, sbttls[i].text, (147, 112, 219)
+                )
+            elif flag == 'item':
+                item = project.tracks[1].add_item(start, end)
+                RPR.ULT_SetMediaItemNote(item.id, sbttls[i].text)
+        except IndexError:
+            break
 
 
-def import_subs_regions(subs: List[str], project: reapy.Project) -> None:
-    sbttls = pysubs2.load(subs[0])
-    mid = len(sbttls) // 2
-    subs_gen_1 = (
-        mp.Process(
-            target=subs_generator,
-            args=(
-                project, sbttls, 0, mid,
-                'region'
+def import_subs(
+        sbttls: pysubs2.SSAFile,
+        project: reapy.Project,
+        step: int,
+        flag: str,
+        strt_idx: int,
+        end_idx: int
+        ) -> None:
+    if strt_idx >= len(sbttls):
+        pass
+    else:
+        subs_gen = (
+            mp.Process(
+                target=subs_generator,
+                args=(
+                    project, sbttls, strt_idx, end_idx,
+                    flag
+                )
             )
         )
-    )
-    subs_gen_2 = (
-        mp.Process(
-            target=subs_generator,
-            args=(
-                project, sbttls, mid, len(sbttls),
-                'region'
-            )
-        )
-    )
-    subs_gen_1.start()
-    subs_gen_2.start()
-    subs_gen_1.join()
-    subs_gen_2.join()
-
-
-def import_subs_items(subs: List[str], project: reapy.Project) -> None:
-    sbttls = pysubs2.load(subs[0])
-    mid = len(sbttls) // 2
-    subs_gen_1 = (
-        mp.Process(
-            target=subs_generator,
-            args=(
-                project, sbttls, 0, mid,
-                'item'
-            )
-        )
-    )
-    subs_gen_2 = (
-        mp.Process(
-            target=subs_generator,
-            args=(
-                project, sbttls, mid, len(sbttls),
-                'item'
-            )
-        )
-    )
-    subs_gen_1.start()
-    subs_gen_2.start()
-    subs_gen_1.join()
-    subs_gen_2.join()
+        subs_gen.start()
+        import_subs(sbttls, project, step, flag, end_idx, (end_idx + step))
+        subs_gen.join()
 
 
 def list_generator(
@@ -242,29 +216,48 @@ def list_generator(
 
 def fix_check(project: reapy.Project, subs: List[str]) -> None:
     """Функция для проверки на пропуски и наложения"""
-    subs_enum = project.tracks[1].n_items
+    dbbl_sbs = {}
+    subs_list = []
+    if subs:
+        sbttls = pysubs2.load(subs[0])
+        pattern = '- '
+        subs_enum = len(sbttls)
+        subs_list = [[float] * 2] * subs_enum
+        position = 0
+        for i, sub in enumerate(sbttls):
+            start = sub.start / 1000
+            end = sub.end / 1000
+            subs_list[position] = [start, end]
+            if pattern in sub.text.lower():
+                dbbl_sbs[i] = [(sub.start / 1000), (sub.end / 1000), 0]
+            position += 1
     items_enum = project.n_items
-    subs_list = [[float] * 2] * subs_enum
-    items_list = [[float] * 2] * (items_enum - subs_enum - 1)
-    queue_subs = mp.Queue()
-    queue_items = mp.Queue()
+    sub_items_enum = project.tracks[1].n_items
+    voice_items = items_enum - sub_items_enum - 1
+    items_mid = voice_items // 2
+    items_list_1 = [[float] * 2] * items_mid
+    items_list_2 = [[float] * 2] * (voice_items - items_mid)
+    queue_1 = mp.Queue()
+    queue_2 = mp.Queue()
+    items_list_gen_1 = mp.Process(
+        target=list_generator,
+        args=(0, (sub_items_enum + 1), (sub_items_enum + 1 + items_mid),
+              items_list_1, queue_1)
+    )
+    items_list_gen_2 = mp.Process(
+        target=list_generator,
+        args=(0, (sub_items_enum + 1 + items_mid), items_enum,
+              items_list_2, queue_2)
+    )
+    items_list_gen_1.start()
+    items_list_gen_2.start()
+    items_list_1 = queue_1.get()
+    items_list_2 = queue_2.get()
+    items_list = list(items_list_1 + items_list_2)
+    items_list_gen_1.join()
+    items_list_gen_2.join()
     checked_subs = []
     dubbles_items = []
-    subs_list_gen = mp.Process(
-        target=list_generator,
-        args=(0, 1, (subs_enum + 1), subs_list, queue_subs)
-    )
-    items_list_gen = mp.Process(
-        target=list_generator,
-        args=(0, (subs_enum + 1), items_enum,
-              items_list, queue_items)
-    )
-    subs_list_gen.start()
-    items_list_gen.start()
-    subs_list = queue_subs.get()
-    items_list = queue_items.get()
-    subs_list_gen.join()
-    items_list_gen.join()
     for s in subs_list:
         lenght = s[1] - s[0]
         for i in items_list:
@@ -304,23 +297,7 @@ def fix_check(project: reapy.Project, subs: List[str]) -> None:
     for s in subs_list:
         if s not in checked_subs:
             project.add_marker(s[0], 'FIX', (255, 0, 255))
-    if subs:
-        dubbles_check(project, subs, items_list)
-
-
-def dubbles_check(
-        project: reapy.Project,
-        subs: List[str],
-        items_list: List
-        ) -> None:
-    sbttls = pysubs2.load(subs[0])
-    pattern = '- '
-    dbbl_sbs = {}
-    for i, sub in enumerate(sbttls):
-        if pattern in sub.text.lower():
-            dbbl_sbs[i] = [(sub.start / 1000), (sub.end / 1000), 0]
     for s in dbbl_sbs:
-        lenght = dbbl_sbs[s][1] - dbbl_sbs[s][0]
         for i in items_list:
             middle = i[0] + ((i[1] - i[0]) / 2)
             if i[0] >= dbbl_sbs[s][0] and i[1] <= dbbl_sbs[s][1]:
@@ -330,25 +307,16 @@ def dubbles_check(
             elif i[0] < dbbl_sbs[s][0] and (
                     i[1] > dbbl_sbs[s][0] and i[1] < dbbl_sbs[s][1]
                     ):
-                if i[1] - dbbl_sbs[s][0] >= lenght / 2.2:
-                    dbbl_sbs[s][2] += 1
-                elif dbbl_sbs[s][0] < middle < dbbl_sbs[s][1]:
+                if dbbl_sbs[s][0] < middle < dbbl_sbs[s][1]:
                     dbbl_sbs[s][2] += 1
             elif i[0] > dbbl_sbs[s][0] and (
                     i[0] < dbbl_sbs[s][1] and i[1] > dbbl_sbs[s][1]
                     ):
-                if dbbl_sbs[s][1] - i[0] >= lenght / 2.2:
-                    dbbl_sbs[s][2] += 1
-                elif dbbl_sbs[s][0] < middle < dbbl_sbs[s][1]:
+                if dbbl_sbs[s][0] < middle < dbbl_sbs[s][1]:
                     dbbl_sbs[s][2] += 1
     for s in dbbl_sbs:
         if dbbl_sbs[s][2] < 2:
-            project.add_region(
-                dbbl_sbs[s][0],
-                dbbl_sbs[s][1],
-                'DUBBLE HERE',
-                (255, 255, 0)
-            )
+            project.add_marker(dbbl_sbs[s][0], 'DUBBLE HERE', (255, 255, 0))
 
 
 def project_save(folder: str, title: str, number: str) -> str:
@@ -450,12 +418,16 @@ def reaper_main(
         audio_select(audio)
         RPR.InsertMedia(video[0], 512 | 0)
         project.save(False)
+        if subs:
+            sbttls = pysubs2.load(subs[0])
+            step = len(sbttls) // 8
+            strt_idx, end_idx = 0, step
+            if get_option('sub_region'):
+                import_subs(sbttls, project, step, 'region', strt_idx, end_idx)
+            if get_option('sub_item'):
+                import_subs(sbttls, project, step, 'item', strt_idx, end_idx)
         if get_option('split'):
             split(project)
-        if subs and (get_option('sub_region')):
-            import_subs_regions(subs, project)
-        if subs and get_option('sub_item'):
-            import_subs_items(subs, project)
         project.save(False)
         hidden_normalize(project)
         back_up(project, new_path)
@@ -625,7 +597,7 @@ fix_check_button = tkinter.Button(
 fix_check_button.place(relx=0.5, rely=1.0, anchor="s", x=150, y=-7)
 version = tkinter.Label(
     master,
-    text='Версия 2.9',
+    text='Версия 3.0',
     background='#9b93b3',
 )
 version.place(relx=0.5, rely=1.0, anchor="s", x=150, y=-378)
