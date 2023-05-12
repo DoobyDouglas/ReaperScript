@@ -12,6 +12,7 @@ import os
 from config_works import (
     load_path,
     save_path,
+    get_option,
 )
 
 MANY_VIDEO = 'Оставьте в рабочей папке только нужный видеофайл'
@@ -78,16 +79,6 @@ def path_choice(name: str) -> str or None:
         save_path(name, path)
     else:
         return path
-
-
-def reaper_check() -> None:
-    """Функция для создания путей к компонентам REAPER"""
-    reaper_path = load_path('reaper_path')
-    if not reaper_path:
-        path_choice('reaper_path')
-    project_path = load_path('project_path')
-    if not project_path:
-        path_choice('project_path')
 
 
 def subs_rename(
@@ -185,16 +176,15 @@ def audio_rename(folder: str, audio: List[str], ext: str) -> List[str] or None:
 def comparator(sub: str) -> bool:
     """Функция для проверки субтитра"""
     if (
-        (
-            'text' in sub
-            or 'sign' in sub
-            or 'надпись' in sub
-            or 'caption' in sub
-            or 'title' in sub
-            or 'song' in sub
-            or 'screen' in sub
-            or 'typedigital' in sub
-        ) and 'subtitle' not in sub
+        'text' in sub
+        or 'sign' in sub
+        or 'надпись' in sub
+        or 'caption' in sub
+        or 'title' in sub
+        or 'song' in sub
+        or 'screen' in sub
+        or 'typedigital' in sub
+        or 'phonetics' in sub
     ):
         return True
     return False
@@ -219,23 +209,18 @@ def subs_edit(subs: List[str], flag: str) -> None:
     elif flag == 'ass':
         to_delete = []
         search_char = '{'
-        if subtitles.events[0].name and subtitles.events[0].style:
-            for i, sub in enumerate(subtitles.events):
-                if (
-                    comparator(sub.name.lower())
-                    or comparator(sub.style.lower())
-                ) and search_char in sub.text:
-                    to_delete.append(i)
-        elif subtitles.events[0].name:
+        if subtitles.events[0].name:
             for i, sub in enumerate(subtitles.events):
                 if comparator(sub.name.lower()) and search_char in sub.text:
                     to_delete.append(i)
-        elif subtitles.events[0].style:
+        if subtitles.events[0].style:
             for i, sub in enumerate(subtitles.events):
                 if comparator(sub.style.lower()) and search_char in sub.text:
-                    to_delete.append(i)
+                    if i not in to_delete:
+                        to_delete.append(i)
         else:
             return
+    to_delete.sort()
     for i in reversed(to_delete):
         del subtitles[i]
     subtitles.save(subs[0])
@@ -281,8 +266,12 @@ def file_works(folder: str) -> (
         return None, None, None, None, None, None
     if subs:
         subs = subs_rename(folder, subs, number)
-        subs_edit(subs, 'srt')
+        if get_option('subs_cleaner'):
+            subs_edit(subs, 'srt')
     else:
+        rus_sub = '0:s:m:language:rus'
+        eng_sub = '0:s:m:language:eng'
+        any_sub = '0:s:m:language:?'
         ass_subs = get_path_to_files(folder, '*.ass')
         vtt_subs = get_path_to_files(folder, '*.vtt')
         if (ass_subs and vtt_subs) or len(ass_subs) > 1 or len(vtt_subs) > 1:
@@ -291,29 +280,36 @@ def file_works(folder: str) -> (
         if vtt_subs:
             vtt_sub_convert(folder, vtt_subs)
         elif ass_subs:
-            subs_edit(ass_subs, 'ass')
+            if get_option('subs_cleaner'):
+                subs_edit(ass_subs, 'ass')
             ass_sub_convert(folder, ass_subs)
         elif not ass_subs:
             if os.path.splitext(video[0])[-1] == '.mkv':
-                subs_extract(folder, video, 'ass', '0:s:m:language:eng')
+                subs_extract(folder, video, 'ass', rus_sub)
                 ass_subs = get_path_to_files(folder, '*.ass')
                 if not ass_subs:
-                    subs_extract(folder, video, 'ass', '0:s:m:language:?')
+                    subs_extract(folder, video, 'ass', eng_sub)
+                    ass_subs = get_path_to_files(folder, '*.ass')
+                if not ass_subs:
+                    subs_extract(folder, video, 'ass', any_sub)
                     ass_subs = get_path_to_files(folder, '*.ass')
                 if ass_subs:
-                    subs_edit(ass_subs, 'ass')
+                    if get_option('subs_cleaner'):
+                        subs_edit(ass_subs, 'ass')
                     ass_sub_convert(folder, ass_subs)
         srt_subs = get_path_to_files(folder, '*.srt')
         if srt_subs:
             subs = subs_rename(folder, srt_subs, number)
-            subs_edit(subs, 'srt')
+            if get_option('subs_cleaner'):
+                subs_edit(subs, 'srt')
         else:
             try:
                 if os.path.splitext(video[0])[-1] == '.mkv':
                     subs_extract(folder, video, 'srt', '0:s:m:language:?')
                     subs = get_path_to_files(folder, '*.srt')
                     subs = subs_rename(folder, subs, number)
-                    subs_edit(subs, 'srt')
+                    if get_option('subs_cleaner'):
+                        subs_edit(subs, 'srt')
             except IndexError:
                 pass
     return subs, audio, video, title, number, ext

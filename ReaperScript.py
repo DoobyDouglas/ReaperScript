@@ -1,9 +1,8 @@
 # Команду ниже нужно ввести один раз в консоли с включенным Reaper.
 # python -c "import reapy; reapy.configure_reaper()"
-# pyinstaller --noconfirm --onefile --noconsole --hidden-import=asstosrt --add-data 'background.png;.' main.py
+# pyinstaller --noconfirm --onefile --noconsole --hidden-import=asstosrt --add-data 'background.png;.' ReaperScript.py
 from file_works import (
     file_works,
-    reaper_check,
     path_choice,
     get_fx_chains,
     get_path_to_files
@@ -28,7 +27,6 @@ from window_utils import (
 )
 import multiprocessing as mp
 import tkinter.messagebox
-import subprocess
 import pysubs2
 import tkinter
 import ffmpeg
@@ -298,6 +296,7 @@ def fix_check(project: reapy.Project, subs: List[str]) -> None:
         if s not in checked_subs:
             project.add_marker(s[0], 'FIX', (255, 0, 255))
     for s in dbbl_sbs:
+        lenght = dbbl_sbs[s][1] - dbbl_sbs[s][0]
         for i in items_list:
             middle = i[0] + ((i[1] - i[0]) / 2)
             if i[0] >= dbbl_sbs[s][0] and i[1] <= dbbl_sbs[s][1]:
@@ -309,19 +308,27 @@ def fix_check(project: reapy.Project, subs: List[str]) -> None:
                     ):
                 if dbbl_sbs[s][0] < middle < dbbl_sbs[s][1]:
                     dbbl_sbs[s][2] += 1
+                elif i[1] - dbbl_sbs[s][0] >= lenght / 3.3:
+                    dbbl_sbs[s][2] += 1
             elif i[0] > dbbl_sbs[s][0] and (
                     i[0] < dbbl_sbs[s][1] and i[1] > dbbl_sbs[s][1]
                     ):
                 if dbbl_sbs[s][0] < middle < dbbl_sbs[s][1]:
+                    dbbl_sbs[s][2] += 1
+                elif dbbl_sbs[s][1] - i[0] >= lenght / 3.3:
                     dbbl_sbs[s][2] += 1
     for s in dbbl_sbs:
         if dbbl_sbs[s][2] < 2:
             project.add_marker(dbbl_sbs[s][0], 'DUBBLE HERE', (255, 255, 0))
 
 
-def project_save(folder: str, title: str, number: str) -> str:
+def project_save(
+        folder: str,
+        title: str,
+        number: str,
+        project_path: str
+        ) -> str:
     """Функция для сохранения проекта"""
-    project_path = load_path('project_path')
     new_path = f'{folder}/{title} {number}.rpp'
     copy = ''
     while os.path.exists(new_path):
@@ -402,18 +409,20 @@ def reaper_main(
         ) -> None:
     """Основная функция"""
     save_options(checkboxes)
-    reaper_check()
+    project_path = load_path('project_path')
+    if not project_path:
+        path_choice('project_path')
+        project_path = load_path('project_path')
     folder = path_choice('folder')
     if folder:
         buttons_freeze(master, BUTTONS)
     subs, audio, video, title, number, ext = file_works(folder)
     if audio and video:
         master.iconify()
-        new_path = project_save(folder, title, number)
-        reaper_path = load_path('reaper_path')
+        new_path = project_save(folder, title, number, project_path)
         hwnd = win32gui.FindWindow('REAPERwnd', None)
         win32gui.ShowWindow(hwnd, 2)
-        subprocess.run([reaper_path, new_path])
+        reapy.open_project(new_path, in_new_tab=True)
         project = reapy.Project()
         audio_select(audio)
         RPR.InsertMedia(video[0], 512 | 0)
@@ -482,9 +491,7 @@ master.geometry(f'{width}x{height}+{x}+{y - upper}')
 master.resizable(width=False, height=False)
 width = master.winfo_screenwidth()
 height = master.winfo_screenheight()
-x = (width - 380) // 2
-y = (height - 390) // 2
-master.title('Выберите нужные опции')
+master.title('REAPERSCRIPT')
 img = Image.open(resource_path('background.png'))
 tk_img = ImageTk.PhotoImage(img)
 background_label = tkinter.Label(master, image=tk_img)
@@ -498,6 +505,7 @@ OPTIONS = [
     'volume_up_dubbers',
     'sub_item',
     'sub_region',
+    'subs_cleaner',
     'fix_check',
     'render_audio',
     'render_video',
@@ -527,35 +535,19 @@ for i, option in enumerate(OPTIONS):
     checkboxes[option] = var
 BUTTONS = [
     'start',
-    'reaper_exe',
     'template',
     'rfx',
     'fix_check',
 ]
 start_bttn = tkinter.Button(
     master,
-    text='Запуск',
+    text='START',
     name='start',
     background='#9b93b3',
     activebackground='#9b93b3',
     command=lambda: on_save_click(checkboxes, master, BUTTONS)
 )
 start_bttn.place(relx=0.5, rely=1.0, anchor="s", y=-9)
-reaper_exe = tkinter.Button(
-    master,
-    text='REAPER',
-    name='reaper_exe',
-    background='#9b93b3',
-    activebackground='#9b93b3',
-    command=lambda: path_choice('reaper_path')
-)
-reaper_exe.grid(
-    row=(len(OPTIONS) + 1),
-    column=0,
-    sticky=tkinter.W,
-    padx=6,
-    pady=3
-    )
 template = tkinter.Button(
     master,
     text='TEMPLATE',
@@ -597,10 +589,10 @@ fix_check_button = tkinter.Button(
 fix_check_button.place(relx=0.5, rely=1.0, anchor="s", x=150, y=-7)
 version = tkinter.Label(
     master,
-    text='Версия 3.0',
+    text='Version 3.04',
     background='#9b93b3',
 )
-version.place(relx=0.5, rely=1.0, anchor="s", x=150, y=-378)
+version.place(relx=0.5, rely=1.0, anchor="s", x=150, y=-382)
 
 # Чтобы Reaper API подгрузился, Reaper должен быть включен при запуске скрипта
 if __name__ == '__main__':
