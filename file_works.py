@@ -14,13 +14,14 @@ from config_works import (
     save_path,
     get_option,
 )
-
-MANY_VIDEO = 'Оставьте в рабочей папке только нужный видеофайл'
-MANY_SUBS = 'Оставьте в рабочей папке только нужный файл субтитров'
-NO_VIDEO = 'В рабочей папке нет видеофайлов подходящего формата'
-NO_AUDIO = 'В рабочей папке нет аудиофайлов подходящего формата'
-NO_FOLDER = 'Рабочая папка не выбрана'
-IN_USE = 'Закройте приложения использующие рабочие файлы'
+from help_texts import (
+    MANY_VIDEO,
+    MANY_SUBS,
+    NO_VIDEO,
+    NO_AUDIO,
+    NO_FOLDER,
+    IN_USE,
+)
 
 
 def get_path_to_files(folder: str, extension: str) -> List[str]:
@@ -44,19 +45,12 @@ def get_fx_chains() -> Dict[str, str] or None:
 
 
 def path_choice(name: str) -> str or None:
-    if name == 'reaper_path' or name == 'project_path':
-        if name == 'reaper_path':
-            defaultextension = 'exe'
-            filetypes = [('.exe', 'reaper.exe')]
-            initialdir = r'C:\Program Files\REAPER (x64)'
-            initialfile = r'C:\Program Files\REAPER (x64)\reaper.exe'
-            title = 'Выберите файл reaper.exe'
-        elif name == 'project_path':
-            defaultextension = 'rpp'
-            filetypes = [('.rpp', '*.rpp')]
-            initialdir = f'{os.getenv("APPDATA")}/REAPER/ProjectTemplates'
-            initialfile = None
-            title = 'Выберите файл шаблона проекта REAPER'
+    if name == 'project_path':
+        defaultextension = 'rpp'
+        filetypes = [('.rpp', '*.rpp')]
+        initialdir = f'{os.getenv("APPDATA")}/REAPER/ProjectTemplates'
+        initialfile = None
+        title = 'Выберите файл шаблона проекта REAPER'
         path = filedialog.askopenfilename(
             defaultextension=defaultextension,
             filetypes=filetypes,
