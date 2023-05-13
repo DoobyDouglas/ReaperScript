@@ -1,6 +1,6 @@
-Конфигурация REAPER API
+Конфигурация REAPER API:
 
-1) В консоли: pip instal lpython-reapy==0.10.0
+1) В консоли: pip install python-reapy==0.10.0
 
 2) Включаем REAPER, в консоли: python -c "import reapy; reapy.configure_reaper()"
 
