@@ -1,9 +1,13 @@
+Конфигурация REAPER API
+
 1) В консоли: pip instal lpython-reapy==0.10.0
 
 2) Включаем REAPER, в консоли: python -c "import reapy; reapy.configure_reaper()"
 
 Если падает DisabledDistAPIWarning, выключаем REAPER и повторяем шаг 2.
+
 Если консоль зависает - попытайтесь сделать конфигурацию из самого REAPER.
+
 Если консоль перешла на новую строку - значит всё ок.
 
 Для проверки: 
