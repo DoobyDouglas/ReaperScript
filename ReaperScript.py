@@ -1,6 +1,6 @@
 # Команду ниже нужно ввести один раз в консоли с включенным Reaper.
 # python -c "import reapy; reapy.configure_reaper()"
-# pyinstaller --noconfirm --onefile --noconsole --hidden-import=asstosrt --add-data 'background.png;.' ReaperScript.py
+# pyinstaller --noconfirm --onefile --noconsole --hidden-import=asstosrt --add-data 'background.png;.' --add-data 'ico.ico;.' --icon=ico.ico ReaperScript.py
 from file_works import (
     file_works,
     path_choice,
@@ -59,7 +59,6 @@ def audio_select(audio: List[str]) -> None:
                     track.set_info_string('P_NAME', name.upper())
 
 
-# Использует послендий пресет сплита
 def split(project: reapy.Project) -> None:
     """Функция для разделения дорог на айтемы"""
     RPR.SetMediaItemSelected(project.items[0].id, False)
@@ -342,7 +341,6 @@ def project_save(
     return new_path
 
 
-# Используется последний пресет рендера
 def render(folder: str) -> str:
     """Функция для рендеринга файла"""
     reapy.perform_action(40015)
@@ -494,7 +492,8 @@ x = (s_width - width) // 2
 y = (s_height - height) // 2
 master.geometry(f'{width}x{height}+{x}+{y - upper}')
 master.resizable(width=False, height=False)
-master.title('REAPERSCRIPT v3.07')
+master.title('REAPERSCRIPT v3.08')
+master.iconbitmap(default=resource_path('ico.ico'))
 img = Image.open(resource_path('background.png'))
 tk_img = ImageTk.PhotoImage(img)
 background_label = tkinter.Label(master, image=tk_img)
@@ -536,7 +535,7 @@ for i, option in enumerate(OPTIONS):
         column=0,
         sticky=tkinter.W
     )
-    ToolTip(checkbox, HELP_DICT[option])
+    ToolTip(checkbox, HELP_DICT[option], 1)
     checkboxes[option] = var
 BUTTONS = [
     'start',
@@ -552,7 +551,7 @@ start_bttn = ttk.Button(
     command=lambda: on_save_click(checkboxes, master, BUTTONS)
 )
 start_bttn.place(relx=0.5, rely=1.0, anchor="s", y=-9)
-ToolTip(start_bttn, HELP_DICT['start'])
+ToolTip(start_bttn, HELP_DICT['start'], 1)
 template_btn = ttk.Button(
     master,
     text='TEMPLATE',
@@ -566,7 +565,7 @@ template_btn.grid(
     padx=6,
     pady=3
 )
-ToolTip(template_btn, HELP_DICT['template'])
+ToolTip(template_btn, HELP_DICT['template'], 1)
 rfxchains_btn = ttk.Button(
     master,
     text='RFXCHAINS',
@@ -580,7 +579,7 @@ rfxchains_btn.grid(
     padx=6,
     pady=3
 )
-ToolTip(rfxchains_btn, HELP_DICT['rfx'])
+ToolTip(rfxchains_btn, HELP_DICT['rfx'], 1)
 fix_check_btn = ttk.Button(
     master,
     text='FIXCHECK',
@@ -588,7 +587,7 @@ fix_check_btn = ttk.Button(
     command=lambda: on_fix_check_click(master, BUTTONS)
 )
 fix_check_btn.place(relx=0.5, rely=1.0, anchor="s", x=145, y=-9)
-ToolTip(fix_check_btn, HELP_DICT['fixcheck_standalone'])
+ToolTip(fix_check_btn, HELP_DICT['fixcheck_standalone'], 1)
 help_btn = ttk.Button(
     master,
     text='HELP',
@@ -596,7 +595,7 @@ help_btn = ttk.Button(
     command=lambda: show_help_window(master),
 )
 help_btn.place(relx=0.5, rely=1.0, anchor="s", x=145, y=-377)
-ToolTip(help_btn, HELP_DICT['help'])
+ToolTip(help_btn, HELP_DICT['help'], 1)
 
 # Чтобы Reaper API подгрузился, Reaper должен быть включен при запуске скрипта
 if __name__ == '__main__':

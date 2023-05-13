@@ -22,7 +22,8 @@ def on_closing_help(
 
 def buttons_freeze(master: tkinter.Tk, BUTTONS: List):
     for button in BUTTONS:
-        master.nametowidget(button).config(state='disabled')
+        if button != 'help':
+            master.nametowidget(button).config(state='disabled')
     master.protocol('WM_DELETE_WINDOW', wait)
 
 
@@ -53,13 +54,18 @@ def show_help_window(master: tkinter.Tk):
     y = master_position[1]
     help_window = tkinter.Tk()
     help_window.title('HOW TO USE')
-    help_window.geometry(f'610x410+{x}+{y}')
+    help_window.geometry(f'615x410+{x}+{y}')
     help_window.resizable(False, False)
     help_window.protocol(
         'WM_DELETE_WINDOW',
         lambda: on_closing_help(master, help_window)
     )
-    text_field = tkinter.Text(help_window, background='#ffc0cb')
+    text_field = tkinter.Text(
+        help_window,
+        background='#ffc0cb',
+        padx=6,
+        pady=3,
+    )
     text_field.insert('1.0', HOW_TO_USE)
     text_field.configure(state='disabled')
     scrollbar = tkinter.Scrollbar(
