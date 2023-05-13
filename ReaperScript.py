@@ -1,11 +1,11 @@
 # Команду ниже нужно ввести один раз в консоли с включенным Reaper.
 # python -c "import reapy; reapy.configure_reaper()"
-# pyinstaller --noconfirm --onefile --noconsole --hidden-import=asstosrt --add-data 'background.png;.' ReaperScript.py
+# pyinstaller --noconfirm --onefile --noconsole --hidden-import=asstosrt --add-data 'background.png;.' --add-data 'ico.ico;.' --icon=ico.ico ReaperScript.py
 from file_works import (
     file_works,
     path_choice,
     get_fx_chains,
-    get_path_to_files
+    get_path_to_files,
 )
 from multiprocessing import freeze_support
 from check_standalone import fix_checker
@@ -23,8 +23,12 @@ from window_utils import (
     on_closing,
     buttons_freeze,
     buttons_active,
-    is_reaper_run
+    is_reaper_run,
+    show_help_window,
 )
+from help_texts import HELP_DICT
+from tkinter import ttk
+from tktooltip import ToolTip
 import multiprocessing as mp
 import tkinter.messagebox
 import pysubs2
@@ -55,7 +59,6 @@ def audio_select(audio: List[str]) -> None:
                     track.set_info_string('P_NAME', name.upper())
 
 
-# Использует послендий пресет сплита
 def split(project: reapy.Project) -> None:
     """Функция для разделения дорог на айтемы"""
     RPR.SetMediaItemSelected(project.items[0].id, False)
@@ -338,7 +341,6 @@ def project_save(
     return new_path
 
 
-# Используется последний пресет рендера
 def render(folder: str) -> str:
     """Функция для рендеринга файла"""
     reapy.perform_action(40015)
@@ -424,6 +426,7 @@ def reaper_main(
         win32gui.ShowWindow(hwnd, 2)
         reapy.open_project(new_path, in_new_tab=True)
         project = reapy.Project()
+        RPR.MoveEditCursor(- project.cursor_position, False)
         audio_select(audio)
         RPR.InsertMedia(video[0], 512 | 0)
         project.save(False)
@@ -489,9 +492,8 @@ x = (s_width - width) // 2
 y = (s_height - height) // 2
 master.geometry(f'{width}x{height}+{x}+{y - upper}')
 master.resizable(width=False, height=False)
-width = master.winfo_screenwidth()
-height = master.winfo_screenheight()
-master.title('REAPERSCRIPT')
+master.title('REAPERSCRIPT v3.08')
+master.iconbitmap(default=resource_path('ico.ico'))
 img = Image.open(resource_path('background.png'))
 tk_img = ImageTk.PhotoImage(img)
 background_label = tkinter.Label(master, image=tk_img)
@@ -512,90 +514,92 @@ OPTIONS = [
 ]
 config = get_config()
 checkboxes = {}
+checkbox_style = ttk.Style()
+checkbox_style.configure('TCheckbutton', background='#ffc0cb')
+button_style = ttk.Style()
+button_style.configure('TButton', background='#ffc0cb')
 for i, option in enumerate(OPTIONS):
     var = tkinter.BooleanVar()
     if option in config['OPTIONS']:
         var.set(config['OPTIONS'].getboolean(option))
     else:
         var.set(False)
-    checkbox = tkinter.Checkbutton(
+    checkbox = ttk.Checkbutton(
         master,
         text=option,
         variable=var,
-        background='#ffc0cb',
-        bd=3,
-        pady=3,
-        activebackground='#ffc0cb'
+        padding=7,
     )
     checkbox.grid(
         row=i,
         column=0,
         sticky=tkinter.W
     )
+    ToolTip(checkbox, HELP_DICT[option], 1)
     checkboxes[option] = var
 BUTTONS = [
     'start',
     'template',
     'rfx',
-    'fix_check',
+    'fixcheck_standalone',
+    'help',
 ]
-start_bttn = tkinter.Button(
+start_bttn = ttk.Button(
     master,
     text='START',
     name='start',
-    background='#9b93b3',
-    activebackground='#9b93b3',
     command=lambda: on_save_click(checkboxes, master, BUTTONS)
 )
 start_bttn.place(relx=0.5, rely=1.0, anchor="s", y=-9)
-template = tkinter.Button(
+ToolTip(start_bttn, HELP_DICT['start'], 1)
+template_btn = ttk.Button(
     master,
     text='TEMPLATE',
     name='template',
-    background='#9b93b3',
-    activebackground='#9b93b3',
     command=lambda: path_choice('project_path')
 )
-template.grid(
+template_btn.grid(
     row=(len(OPTIONS) + 2),
     column=0,
     sticky=tkinter.W,
     padx=6,
     pady=3
-    )
-rfxchains = tkinter.Button(
+)
+ToolTip(template_btn, HELP_DICT['template'], 1)
+rfxchains_btn = ttk.Button(
     master,
     text='RFXCHAINS',
     name='rfx',
-    background='#9b93b3',
-    activebackground='#9b93b3',
     command=lambda: path_choice('fx_chains_folder')
 )
-rfxchains.grid(
+rfxchains_btn.grid(
     row=(len(OPTIONS) + 3),
     column=0,
     sticky=tkinter.W,
     padx=6,
     pady=3
-    )
-fix_check_button = tkinter.Button(
+)
+ToolTip(rfxchains_btn, HELP_DICT['rfx'], 1)
+fix_check_btn = ttk.Button(
     master,
     text='FIXCHECK',
-    name='fix_check',
-    background='#9b93b3',
-    activebackground='#9b93b3',
+    name='fixcheck_standalone',
     command=lambda: on_fix_check_click(master, BUTTONS)
 )
-fix_check_button.place(relx=0.5, rely=1.0, anchor="s", x=150, y=-7)
-version = tkinter.Label(
+fix_check_btn.place(relx=0.5, rely=1.0, anchor="s", x=145, y=-9)
+ToolTip(fix_check_btn, HELP_DICT['fixcheck_standalone'], 1)
+help_btn = ttk.Button(
     master,
-    text='Version 3.04',
-    background='#9b93b3',
+    text='HELP',
+    name='help',
+    command=lambda: show_help_window(master),
 )
-version.place(relx=0.5, rely=1.0, anchor="s", x=150, y=-382)
+help_btn.place(relx=0.5, rely=1.0, anchor="s", x=145, y=-377)
+ToolTip(help_btn, HELP_DICT['help'], 1)
 
 # Чтобы Reaper API подгрузился, Reaper должен быть включен при запуске скрипта
 if __name__ == '__main__':
     freeze_support()
     is_reaper_run()
+    master.focus_force()
     master.mainloop()
