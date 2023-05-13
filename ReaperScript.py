@@ -425,6 +425,9 @@ def reaper_main(
         hwnd = win32gui.FindWindow('REAPERwnd', None)
         win32gui.ShowWindow(hwnd, 2)
         reapy.open_project(new_path, in_new_tab=True)
+        unsaved = reapy.Project(0)
+        if unsaved.name == '' and unsaved.n_tracks == 0:
+            unsaved.close()
         project = reapy.Project()
         RPR.MoveEditCursor(- project.cursor_position, False)
         audio_select(audio)
@@ -461,6 +464,7 @@ def reaper_main(
                 make_episode(video, folder, title, number, ext, output_file)
     buttons_active(master, BUTTONS)
     master.wm_deiconify()
+    master.focus_force()
 
 
 def on_save_click(checkboxes: Dict, master: tkinter.Tk, BUTTONS: List):
@@ -492,7 +496,7 @@ x = (s_width - width) // 2
 y = (s_height - height) // 2
 master.geometry(f'{width}x{height}+{x}+{y - upper}')
 master.resizable(width=False, height=False)
-master.title('REAPERSCRIPT v3.08')
+master.title('REAPERSCRIPT v3.09')
 master.iconbitmap(default=resource_path('ico.ico'))
 img = Image.open(resource_path('background.png'))
 tk_img = ImageTk.PhotoImage(img)
