@@ -14,5 +14,6 @@ python-reapy==0.10.0
 pywin32==306
 pywin32-ctypes==0.2.0
 six==1.16.0
+tkinter-tooltip==2.1.0
 typing_extensions==4.5.0
 zipp==3.15.0
