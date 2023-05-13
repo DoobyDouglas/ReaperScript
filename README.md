@@ -1,10 +1,16 @@
-Для корректной работы всех функций, необходимо установить в систему python-reapy==0.10.0 и ffmpeg
+1) В консоли: pip instal lpython-reapy==0.10.0
 
-ffmpeg лучше сразу прописать в PATH, но это не обязательно
+2) Включаем REAPER, в консоли: python -c "import reapy; reapy.configure_reaper()"
 
-Включаем REAPER, в консоли (например CMD) пишем python -c "import reapy; reapy.configure_reaper()"
+Если падает DisabledDistAPIWarning, выключаем REAPER и повторяем шаг 2.
+Если консоль зависает - попытайтесь сделать конфигурацию из самого REAPER.
+Если консоль перешла на новую строку - значит всё ок.
 
-После конфигурации REAPER, можно упаковать программу в .exe
+Для проверки: 
+1) Перезапустите REAPER
+2) Войдите в оболочку python
+3) import reapy
+4) reapy.test_api()
 
-pyinstaller --noconfirm --onefile --noconsole --hidden-import=asstosrt --add-data 'background.png;.' ReaperScript.py
+Приложение упаковано в ReaperScript.exe и для его работы не нужны дополнительные файлы.
 
