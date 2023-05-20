@@ -1,7 +1,8 @@
+from help_texts import HOW_TO_USE
+from tkinter import ttk
 from typing import List
 import tkinter
 import win32gui
-from help_texts import HOW_TO_USE
 
 
 def wait():
@@ -48,13 +49,13 @@ def is_reaper_run():
 
 def show_help_window(master: tkinter.Tk):
     master.nametowidget('help').config(state='disabled')
-    master_geometry = master.geometry().split('+')[0].split('x')
+    master_geometry = master.geometry().split('+')[0].split('x')[0]
     master_position = master.geometry().split('x')[1].split('+')[1:]
-    x = int(master_position[0]) + int(master_geometry[0]) + 6
+    x = int(master_position[0]) + int(master_geometry) + 6
     y = master_position[1]
-    help_window = tkinter.Tk()
+    help_window = tkinter.Toplevel(master)
     help_window.title('HOW TO USE')
-    help_window.geometry(f'615x410+{x}+{y}')
+    help_window.geometry(f'615x440+{x}+{y}')
     help_window.resizable(False, False)
     help_window.protocol(
         'WM_DELETE_WINDOW',
@@ -68,7 +69,7 @@ def show_help_window(master: tkinter.Tk):
     )
     text_field.insert('1.0', HOW_TO_USE)
     text_field.configure(state='disabled')
-    scrollbar = tkinter.Scrollbar(
+    scrollbar = ttk.Scrollbar(
         help_window,
         orient='vertical',
         command=text_field.yview
