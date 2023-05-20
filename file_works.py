@@ -1,14 +1,6 @@
 from typing import List, Tuple, Dict
 from tkinter import filedialog
 from ffmpeg._run import Error
-import tkinter.messagebox
-import asstosrt
-import pysubs2
-import tkinter
-import ffmpeg
-import glob
-import re
-import os
 from config_works import (
     load_path,
     save_path,
@@ -22,6 +14,24 @@ from help_texts import (
     NO_FOLDER,
     IN_USE,
 )
+import tkinter.messagebox
+import asstosrt
+import pysubs2
+import tkinter
+import ffmpeg
+import glob
+import sys
+import re
+import os
+
+
+def resource_path(path):
+    try:
+        base_path = sys._MEIPASS
+    except Exception:
+        base_path = os.path.abspath('.')
+
+    return os.path.join(base_path, path)
 
 
 def get_path_to_files(folder: str, extension: str) -> List[str]:
@@ -29,7 +39,6 @@ def get_path_to_files(folder: str, extension: str) -> List[str]:
     return glob.glob(os.path.join(folder, extension))
 
 
-# Если имена состоят из нескольких слов, названия цепей нужно писать через "_"
 def get_fx_chains() -> Dict[str, str] or None:
     """Функция создания словаря из дабберов и названий их цепей эффектов"""
     fx_chains_folder = load_path('fx_chains_folder')
@@ -45,12 +54,15 @@ def get_fx_chains() -> Dict[str, str] or None:
 
 
 def path_choice(name: str) -> str or None:
-    if name == 'project_path':
+    if name == 'project_path' or name == 'nrtemplate':
         defaultextension = 'rpp'
         filetypes = [('.rpp', '*.rpp')]
         initialdir = f'{os.getenv("APPDATA")}/REAPER/ProjectTemplates'
         initialfile = None
-        title = 'Выберите файл шаблона проекта REAPER'
+        if name == 'project_path':
+            title = 'Выберите файл шаблона проекта REAPER'
+        else:
+            title = 'Выберите файл шаблона проекта REAPER для удаления шума'
         path = filedialog.askopenfilename(
             defaultextension=defaultextension,
             filetypes=filetypes,
@@ -174,7 +186,7 @@ def comparator(sub: str) -> bool:
         or 'sign' in sub
         or 'надпись' in sub
         or 'caption' in sub
-        or 'title' in sub
+        or ('title' in sub and 'subtitle' not in sub)
         or 'song' in sub
         or 'screen' in sub
         or 'typedigital' in sub
