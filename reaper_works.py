@@ -1,6 +1,6 @@
 from reapy import reascript_api as RPR
 from config_works import get_option, load_path
-from file_works import get_fx_chains, get_path_to_files
+from file_works import get_fx_chains, glob_path
 from typing import List
 import multiprocessing as mp
 import win32con
@@ -64,23 +64,19 @@ def split(project: reapy.Project) -> None:
     win32gui.SendMessage(hwnd, win32con.WM_COMMAND, 1, 0)
 
 
-def normalize_all(command: int, project: reapy.Project) -> None:
+def normalize(command: int, project: reapy.Project, flag: str) -> None:
     """Функция для нормализации всего по громкости"""
-    project.select_all_items()
-    reapy.perform_action(command)
-
-
-def normalize_dubbers(command: int, project: reapy.Project) -> None:
-    """Функция для нормализации дорог по громкости"""
-    project.select_all_items()
-    RPR.SetMediaItemSelected(project.items[0].id, False)
-    reapy.perform_action(command)
-
-
-def normalize_video(command: int, project: reapy.Project) -> None:
-    """Функция для нормализации видео по громкости"""
-    project.select_all_items(False)
-    RPR.SetMediaItemSelected(project.items[0].id, True)
+    if flag == 'all' or flag == 'dubbers':
+        select_all = True
+    else:
+        select_all = False
+    if flag == 'dubbers':
+        select_item = False
+    elif flag == 'video':
+        select_item = True
+    project.select_all_items(select_all)
+    if flag == 'video' or flag == 'dubbers':
+        RPR.SetMediaItemSelected(project.items[0].id, select_item)
     reapy.perform_action(command)
 
 
@@ -91,8 +87,8 @@ def hidden_normalize(project: reapy.Project) -> None:
     clsname, title = '#32770', 'SWS/BR - Normalizing loudness...'
     if get_option('normalize'):
         norm = mp.Process(
-            target=normalize_all,
-            args=(command, project)
+            target=normalize,
+            args=(command, project, 'all')
         )
         hide = mp.Process(
             target=hide_window,
@@ -104,8 +100,8 @@ def hidden_normalize(project: reapy.Project) -> None:
         hide.join()
     if get_option('normalize_dubbers'):
         norm = mp.Process(
-            target=normalize_dubbers,
-            args=(command, project)
+            target=normalize,
+            args=(command, project, 'dubbers')
         )
         hide = mp.Process(
             target=hide_window,
@@ -117,8 +113,8 @@ def hidden_normalize(project: reapy.Project) -> None:
         hide.join()
     if get_option('normalize_video'):
         norm = mp.Process(
-            target=normalize_video,
-            args=(command, project)
+            target=normalize,
+            args=(command, project, 'video')
         )
         hide = mp.Process(
             target=hide_window,
@@ -379,30 +375,21 @@ def render(folder: str, flag: str, tracks: int = None) -> str or None:
     hide.start()
     win32gui.SendMessage(render, win32con.BM_CLICK, 0, 0)
     if flag == 'main':
-        output_file = os.path.normpath(get_path_to_files(folder, 'audio.*')[0])
+        output_file = os.path.normpath(glob_path(folder, 'audio.*')[0])
         return output_file
 
 
 def hide_window(clsname: str, title: str, flag: str, tracks: int = None):
+    if flag == 'render_to_file' or flag == 'de_noize':
+        time.sleep(1)
     hwnd = win32gui.FindWindow(clsname, title)
-    if flag == 'normalize':
+    if flag != 'de_noize':
         while not hwnd:
             time.sleep(0.1)
             hwnd = win32gui.FindWindow(clsname, title)
-    elif flag == 'render_main':
-        while not hwnd:
-            time.sleep(0.1)
-            hwnd = win32gui.FindWindow(clsname, title)
-    elif flag == 'render_to_file':
-        time.sleep(1)
-        hwnd = win32gui.FindWindow(clsname, title)
-        while not hwnd:
-            time.sleep(0.1)
-            hwnd = win32gui.FindWindow(clsname, title)
-    elif flag == 'de_noize':
-        time.sleep(1)
+        win32gui.ShowWindow(hwnd, 0)
+    else:
         if tracks == 1:
-            hwnd = win32gui.FindWindow(clsname, title)
             while not hwnd:
                 time.sleep(0.1)
                 hwnd = win32gui.FindWindow(clsname, title)
@@ -418,8 +405,6 @@ def hide_window(clsname: str, title: str, flag: str, tracks: int = None):
                         clsname, f'Rendering region {i}/{tracks}...'
                     )
                 win32gui.ShowWindow(hwnd, 0)
-    if flag != 'de_noize':
-        win32gui.ShowWindow(hwnd, 0)
 
 
 def de_noizer(folder: str, audio) -> List[str]:
@@ -436,10 +421,7 @@ def de_noizer(folder: str, audio) -> List[str]:
     for file in audio:
         os.remove(file)
         os.remove(f'{file}.reapeaks')
-    flac = get_path_to_files(folder, '*.flac')
-    wave = get_path_to_files(folder, '*.wave')
-    audio = list(flac + wave)
-    return audio
+    return list(glob_path(folder, '*.flac') + glob_path(folder, '*.wave'))
 
 
 if __name__ == '__main__':

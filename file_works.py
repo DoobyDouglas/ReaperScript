@@ -34,7 +34,7 @@ def resource_path(path):
     return os.path.join(base_path, path)
 
 
-def get_path_to_files(folder: str, extension: str) -> List[str]:
+def glob_path(folder: str, extension: str) -> List[str]:
     """Функция для получения пути к файлу"""
     return glob.glob(os.path.join(folder, extension))
 
@@ -44,7 +44,7 @@ def get_fx_chains() -> Dict[str, str] or None:
     fx_chains_folder = load_path('fx_chains_folder')
     if fx_chains_folder:
         fx_dict = {}
-        fx_chains = get_path_to_files(fx_chains_folder, '*.RfxChain')
+        fx_chains = glob_path(fx_chains_folder, '*.RfxChain')
         for chain in fx_chains:
             fx_chain_name = chain.split('\\')[-1]
             dubber_name = fx_chain_name.split('.')[-2].lower()
@@ -97,7 +97,7 @@ def subs_rename(
         filenamae = os.path.splitext(subs[0])[0].split('\\')[-2]
         new_name = f'{filenamae}/{number}.srt'
         os.rename(subs[0], new_name)
-        subs = get_path_to_files(folder, '*.srt')
+        subs = glob_path(folder, '*.srt')
     except PermissionError:
         tkinter.messagebox.showerror('Файл используется', IN_USE)
         return None
@@ -150,7 +150,7 @@ def video_rename(
     new_name = f'{filename}/{title} {number}{ext}'
     try:
         os.rename(video[0], new_name)
-        video = get_path_to_files(folder, f'*{ext}')
+        video = glob_path(folder, f'*{ext}')
         return video, title, number, ext
     except PermissionError:
         tkinter.messagebox.showerror('Файл используется', IN_USE)
@@ -175,7 +175,7 @@ def audio_rename(folder: str, audio: List[str], ext: str) -> List[str] or None:
             except PermissionError:
                 tkinter.messagebox.showerror('Файл используется', IN_USE)
                 return None
-    fixed_audio = get_path_to_files(folder, f'*{ext}')
+    fixed_audio = glob_path(folder, f'*{ext}')
     return fixed_audio
 
 
@@ -244,8 +244,8 @@ def file_works(folder: str) -> (
     if not folder:
         tkinter.messagebox.showerror('Ошибка', NO_FOLDER)
         return None, None, None, None, None, None
-    mkv_video = get_path_to_files(folder, '*.mkv')
-    mp4_video = get_path_to_files(folder, '*.mp4')
+    mkv_video = glob_path(folder, '*.mkv')
+    mp4_video = glob_path(folder, '*.mp4')
     if not mkv_video and not mp4_video:
         tkinter.messagebox.showerror('Нет видеофайлов', NO_VIDEO)
         return None, None, None, None, None, None
@@ -256,8 +256,8 @@ def file_works(folder: str) -> (
         video, title, number, ext = video_rename(folder, mkv_video)
     elif mp4_video:
         video, title, number, ext = video_rename(folder, mp4_video)
-    flac_audio = get_path_to_files(folder, '*.flac*')
-    wav_audio = get_path_to_files(folder, '*.wav*')
+    flac_audio = glob_path(folder, '*.flac*')
+    wav_audio = glob_path(folder, '*.wav*')
     if not flac_audio and not wav_audio:
         tkinter.messagebox.showerror('Нет аудиофайлов', NO_AUDIO)
         return None, None, None, None, None, None
@@ -266,7 +266,7 @@ def file_works(folder: str) -> (
     if wav_audio:
         wav_audio = audio_rename(folder, wav_audio, '.wav')
     audio = list(flac_audio + wav_audio)
-    subs = get_path_to_files(folder, '*.srt')
+    subs = glob_path(folder, '*.srt')
     if len(subs) > 1:
         tkinter.messagebox.showerror('Много файлов субтитров', MANY_SUBS)
         return None, None, None, None, None, None
@@ -278,8 +278,8 @@ def file_works(folder: str) -> (
         rus_sub = '0:s:m:language:rus'
         eng_sub = '0:s:m:language:eng'
         any_sub = '0:s:m:language:?'
-        ass_subs = get_path_to_files(folder, '*.ass')
-        vtt_subs = get_path_to_files(folder, '*.vtt')
+        ass_subs = glob_path(folder, '*.ass')
+        vtt_subs = glob_path(folder, '*.vtt')
         if (ass_subs and vtt_subs) or len(ass_subs) > 1 or len(vtt_subs) > 1:
             tkinter.messagebox.showerror('Много файлов субтитров', MANY_SUBS)
             return None, None, None, None, None, None
@@ -292,18 +292,18 @@ def file_works(folder: str) -> (
         elif not ass_subs:
             if os.path.splitext(video[0])[-1] == '.mkv':
                 subs_extract(folder, video, 'ass', rus_sub)
-                ass_subs = get_path_to_files(folder, '*.ass')
+                ass_subs = glob_path(folder, '*.ass')
                 if not ass_subs:
                     subs_extract(folder, video, 'ass', eng_sub)
-                    ass_subs = get_path_to_files(folder, '*.ass')
+                    ass_subs = glob_path(folder, '*.ass')
                 if not ass_subs:
                     subs_extract(folder, video, 'ass', any_sub)
-                    ass_subs = get_path_to_files(folder, '*.ass')
+                    ass_subs = glob_path(folder, '*.ass')
                 if ass_subs:
                     if get_option('subs_cleaner'):
                         subs_edit(ass_subs, 'ass')
                     ass_sub_convert(folder, ass_subs)
-        srt_subs = get_path_to_files(folder, '*.srt')
+        srt_subs = glob_path(folder, '*.srt')
         if srt_subs:
             subs = subs_rename(folder, srt_subs, number)
             if get_option('subs_cleaner'):
@@ -312,7 +312,7 @@ def file_works(folder: str) -> (
             try:
                 if os.path.splitext(video[0])[-1] == '.mkv':
                     subs_extract(folder, video, 'srt', '0:s:m:language:?')
-                    subs = get_path_to_files(folder, '*.srt')
+                    subs = glob_path(folder, '*.srt')
                     subs = subs_rename(folder, subs, number)
                     if get_option('subs_cleaner'):
                         subs_edit(subs, 'srt')
