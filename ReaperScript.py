@@ -159,7 +159,7 @@ x = (s_width - width) // 2
 y = (s_height - height) // 2
 master.geometry(f'{width}x{height}+{x}+{y - upper}')
 master.resizable(width=False, height=False)
-master.title('REAPERSCRIPT v3.20')
+master.title('REAPERSCRIPT v3.21')
 master.iconbitmap(default=resource_path('ico.ico'))
 img = Image.open(resource_path('background.png'))
 tk_img = ImageTk.PhotoImage(img)
