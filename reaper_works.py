@@ -64,8 +64,12 @@ def split(project: reapy.Project) -> None:
     win32gui.SendMessage(hwnd, win32con.WM_COMMAND, 1, 0)
 
 
-def normalize(command: int, project: reapy.Project, flag: str) -> None:
-    """Функция для нормализации всего по громкости"""
+def normalize_loudness(
+        command: int,
+        project: reapy.Project,
+        flag: str
+        ) -> None:
+    """Функция для нормализации громкости"""
     if flag == 'all' or flag == 'dubbers':
         select_all = True
     else:
@@ -80,50 +84,23 @@ def normalize(command: int, project: reapy.Project, flag: str) -> None:
     reapy.perform_action(command)
 
 
-def hidden_normalize(project: reapy.Project) -> None:
+def normalize(project: reapy.Project, flag: str) -> None:
     command = RPR.NamedCommandLookup(
             '_BR_NORMALIZE_LOUDNESS_ITEMS23'
         )
     clsname, title = '#32770', 'SWS/BR - Normalizing loudness...'
-    if get_option('normalize'):
-        norm = mp.Process(
-            target=normalize,
-            args=(command, project, 'all')
-        )
-        hide = mp.Process(
-            target=hide_window,
-            args=(clsname, title, 'normalize')
-        )
-        norm.start()
-        hide.start()
-        norm.join()
-        hide.join()
-    if get_option('normalize_dubbers'):
-        norm = mp.Process(
-            target=normalize,
-            args=(command, project, 'dubbers')
-        )
-        hide = mp.Process(
-            target=hide_window,
-            args=(clsname, title, 'normalize')
-        )
-        norm.start()
-        hide.start()
-        norm.join()
-        hide.join()
-    if get_option('normalize_video'):
-        norm = mp.Process(
-            target=normalize,
-            args=(command, project, 'video')
-        )
-        hide = mp.Process(
-            target=hide_window,
-            args=(clsname, title, 'normalize')
-        )
-        norm.start()
-        hide.start()
-        norm.join()
-        hide.join()
+    norm = mp.Process(
+        target=normalize_loudness,
+        args=(command, project, flag)
+    )
+    hide = mp.Process(
+        target=hide_window,
+        args=(clsname, title, 'normalize')
+    )
+    norm.start()
+    hide.start()
+    norm.join()
+    hide.join()
 
 
 def subs_generator(
@@ -142,8 +119,7 @@ def subs_generator(
                     start, end, sbttls[i].text, (147, 112, 219)
                 )
                 # RPR.NF_SetSWSMarkerRegionSub(sbttls[i].text, region.index)
-                # Странно себя ведёт в потоке,
-                # потому что сразу много регионов создаётся и путаются ID
+                # Странно себя ведёт в потоке
             elif flag == 'item':
                 item = project.tracks[1].add_item(start, end)
                 RPR.ULT_SetMediaItemNote(item.id, sbttls[i].text)
@@ -166,7 +142,10 @@ def import_subs(
             mp.Process(
                 target=subs_generator,
                 args=(
-                    project, sbttls, strt_idx, end_idx,
+                    project,
+                    sbttls,
+                    strt_idx,
+                    end_idx,
                     flag
                 )
             )
@@ -183,7 +162,7 @@ def list_generator(
         list: List[List[float]],
         queue: mp.Queue
         ) -> None:
-    """Функция для создания списка айтемов/субтитров"""
+    """Функция для создания списка айтемов"""
     for i in range(strt_idx, end_idx):
         item = RPR.GetMediaItem(0, i)
         start = RPR.GetMediaItemInfo_Value(
