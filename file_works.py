@@ -289,7 +289,7 @@ def file_works(folder: str) -> (
             if get_option('subs_cleaner'):
                 subs_edit(ass_subs, 'ass')
             ass_sub_convert(folder, ass_subs)
-        elif not ass_subs:
+        elif not ass_subs and video:
             if os.path.splitext(video[0])[-1] == '.mkv':
                 subs_extract(folder, video, 'ass', rus_sub)
                 ass_subs = glob_path(folder, '*.ass')
@@ -317,6 +317,8 @@ def file_works(folder: str) -> (
                     if get_option('subs_cleaner'):
                         subs_edit(subs, 'srt')
             except IndexError:
+                pass
+            except TypeError:
                 pass
     return subs, audio, video, title, number, ext
 

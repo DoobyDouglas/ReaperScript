@@ -19,7 +19,7 @@ from file_works import (
 from reaper_works import (
     audio_select,
     split,
-    hidden_normalize,
+    normalize,
     import_subs,
     fix_check,
     project_save,
@@ -116,22 +116,18 @@ def reaper_main(
         if get_option('split'):
             split(project)
         project.save(False)
-        hidden_normalize(project)
+        if get_option('normalize'):
+            normalize(project, 'all')
+        if get_option('normalize_dubbers'):
+            normalize(project, 'dubbers')
+        if get_option('normalize_video'):
+            normalize(project, 'video')
         back_up(project, new_path)
         if get_option('fix_check'):
             fix_check(project, subs)
         project.save(False)
         if get_option('render_audio'):
             output_file = render(folder, 'main')
-            time.sleep(2)
-            old_file_size = os.path.getsize(output_file)
-            time.sleep(3)
-            new_file_size = os.path.getsize(output_file)
-            while old_file_size < new_file_size:
-                old_file_size = os.path.getsize(output_file)
-                time.sleep(3)
-                new_file_size = os.path.getsize(output_file)
-            time.sleep(2)
             if get_option('render_video'):
                 make_episode(video, folder, title, number, ext, output_file)
     buttons_active(master, BUTTONS)
@@ -159,7 +155,7 @@ x = (s_width - width) // 2
 y = (s_height - height) // 2
 master.geometry(f'{width}x{height}+{x}+{y - upper}')
 master.resizable(width=False, height=False)
-master.title('REAPERSCRIPT v3.21')
+master.title('REAPERSCRIPT v3.22')
 master.iconbitmap(default=resource_path('ico.ico'))
 img = Image.open(resource_path('background.png'))
 tk_img = ImageTk.PhotoImage(img)
