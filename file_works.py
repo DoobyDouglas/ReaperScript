@@ -304,19 +304,18 @@ def file_works(folder: str) -> (
                 subs_edit(ass_subs, 'ass')
             ass_sub_convert(folder, ass_subs)
         elif not ass_subs and video:
-            if os.path.splitext(video[0])[-1] == '.mkv':
-                subs_extract(folder, video, 'ass', try_sub)
+            subs_extract(folder, video, 'ass', try_sub)
+            ass_subs = glob_path(folder, '*.ass')
+            if not ass_subs:
+                subs_extract(folder, video, 'ass', eng_sub)
                 ass_subs = glob_path(folder, '*.ass')
-                if not ass_subs:
-                    subs_extract(folder, video, 'ass', eng_sub)
-                    ass_subs = glob_path(folder, '*.ass')
-                if not ass_subs:
-                    subs_extract(folder, video, 'ass', any_sub)
-                    ass_subs = glob_path(folder, '*.ass')
-                if ass_subs:
-                    if get_option('subs_cleaner'):
-                        subs_edit(ass_subs, 'ass')
-                    ass_sub_convert(folder, ass_subs)
+            if not ass_subs:
+                subs_extract(folder, video, 'ass', any_sub)
+                ass_subs = glob_path(folder, '*.ass')
+            if ass_subs:
+                if get_option('subs_cleaner'):
+                    subs_edit(ass_subs, 'ass')
+                ass_sub_convert(folder, ass_subs)
         srt_subs = glob_path(folder, '*.srt')
         if srt_subs:
             subs = subs_rename(folder, srt_subs, number)
@@ -324,12 +323,11 @@ def file_works(folder: str) -> (
                 subs_edit(subs, 'srt')
         else:
             try:
-                if os.path.splitext(video[0])[-1] == '.mkv':
-                    subs_extract(folder, video, 'srt', '0:s:m:language:?')
-                    subs = glob_path(folder, '*.srt')
-                    subs = subs_rename(folder, subs, number)
-                    if get_option('subs_cleaner'):
-                        subs_edit(subs, 'srt')
+                subs_extract(folder, video, 'srt', '0:s:m:language:?')
+                subs = glob_path(folder, '*.srt')
+                subs = subs_rename(folder, subs, number)
+                if get_option('subs_cleaner'):
+                    subs_edit(subs, 'srt')
             except IndexError:
                 pass
             except TypeError:
