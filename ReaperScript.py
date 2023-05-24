@@ -156,7 +156,7 @@ def on_fix_check_click(master: tkinter.Tk, BUTTONS: List):
 master = tkinter.Tk(className='REAPERSCRIPT.main')
 master.geometry(set_geometry(master))
 master.resizable(False, False)
-master.title('REAPERSCRIPT v3.26')
+master.title('REAPERSCRIPT v3.27')
 master.iconbitmap(default=resource_path('ico.ico'))
 master.protocol('WM_DELETE_WINDOW', on_closing)
 style = ttk.Style()
