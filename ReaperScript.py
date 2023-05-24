@@ -156,7 +156,7 @@ def on_fix_check_click(master: tkinter.Tk, BUTTONS: List):
 master = tkinter.Tk(className='REAPERSCRIPT.main')
 master.geometry(set_geometry(master))
 master.resizable(False, False)
-master.title('REAPERSCRIPT v3.24')
+master.title('REAPERSCRIPT v3.25')
 master.iconbitmap(default=resource_path('ico.ico'))
 master.protocol('WM_DELETE_WINDOW', on_closing)
 style = ttk.Style()
@@ -293,8 +293,8 @@ try:
     menu.set(config['SUBS']['subs_lang'])
 except KeyError:
     menu.set(SUBS_LANGS_LIST[0])
-menu.place(relx=0.5, rely=1.0, anchor="s", x=6, y=-391)
-
+menu.place(relx=0.5, rely=1.0, anchor="s", x=9, y=-391)
+ToolTip(menu, HELP_DICT['subs_lang'], 1)
 
 if __name__ == '__main__':
     freeze_support()
