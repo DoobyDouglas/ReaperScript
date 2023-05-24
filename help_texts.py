@@ -73,8 +73,6 @@ HOW_TO_USE = (
 NOIZE_REDUCTION = ('Очищает дороги дабберов от шума. '
                    'Для корректной работы нужно выбрать шаблон в "NR TEMP".')
 SPLIT = 'Использует последний пресет Dynamic split items'
-NORM = ('Использует SWS/BR: Normalize loudness of selected items to -23 LUFS '
-        'для всех айтемов проекта')
 NORM_D = ('Использует SWS/BR: Normalize loudness of selected items to -23 '
           'LUFS для айтемов дабберов')
 NORM_V = ('Использует SWS/BR: Normalize loudness of selected items to -23 '
@@ -96,7 +94,6 @@ NR_TEMP = 'Выбрать шаблон проекта REAPER для удален
 HELP = 'Помощь'
 HELP_DICT = {
     'split': SPLIT,
-    'normalize': NORM,
     'normalize_dubbers': NORM_D,
     'normalize_video': NORM_V,
     'volume_up_dubbers': VOLUME_UP,
