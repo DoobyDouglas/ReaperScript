@@ -34,6 +34,7 @@ from window_utils import (
     buttons_active,
     is_reaper_run,
     show_help_window,
+    set_geometry,
 )
 from help_texts import HELP_DICT
 from tkinter import ttk
@@ -83,7 +84,7 @@ def reaper_main(
         BUTTONS: List
         ) -> None:
     """Основная функция"""
-    save_options(checkboxes)
+    save_options(master, checkboxes)
     project_path = load_path('project_path')
     if not project_path:
         path_choice('project_path')
@@ -116,7 +117,7 @@ def reaper_main(
         if get_option('split'):
             split(project)
         project.save(False)
-        if get_option('normalize'):
+        if get_option('normalize_dubbers') and get_option('normalize_video'):
             normalize(project, 'all')
         if get_option('normalize_dubbers'):
             normalize(project, 'dubbers')
@@ -135,8 +136,15 @@ def reaper_main(
     master.focus_force()
 
 
-def on_start_click(checkboxes: Dict, master: tkinter.Tk, BUTTONS: List):
-    thread = Thread(target=reaper_main, args=(checkboxes, master, BUTTONS))
+def on_start_click(
+        checkboxes: Dict,
+        master: tkinter.Tk,
+        BUTTONS: List
+        ):
+    thread = Thread(
+        target=reaper_main,
+        args=(checkboxes, master, BUTTONS)
+    )
     thread.start()
 
 
@@ -146,22 +154,22 @@ def on_fix_check_click(master: tkinter.Tk, BUTTONS: List):
 
 
 master = tkinter.Tk(className='REAPERSCRIPT.main')
-width = 380
-height = 440
-s_width = master.winfo_screenwidth()
-s_height = master.winfo_screenheight()
-upper = s_height // 8
-x = (s_width - width) // 2
-y = (s_height - height) // 2
-master.geometry(f'{width}x{height}+{x}+{y - upper}')
-master.resizable(width=False, height=False)
-master.title('REAPERSCRIPT v3.22')
+master.geometry(set_geometry(master))
+master.resizable(False, False)
+master.title('REAPERSCRIPT v3.24')
 master.iconbitmap(default=resource_path('ico.ico'))
-img = Image.open(resource_path('background.png'))
-tk_img = ImageTk.PhotoImage(img)
-background_label = tkinter.Label(master, image=tk_img)
-background_label.place(x=0, y=0, relwidth=1, relheight=1)
 master.protocol('WM_DELETE_WINDOW', on_closing)
+style = ttk.Style()
+style.configure('TCheckbutton', background='#ffc0cb')
+style.configure('TButton', background='#ffc0cb')
+style.configure('TLabel', background='#ffc0cb')
+style.configure('TButton', width=13)
+raw_img = Image.open(resource_path('background.png'))
+image = ImageTk.PhotoImage(raw_img)
+background = tkinter.Label(master, image=image)
+background.place(x=0, y=0, relwidth=1, relheight=1)
+config = get_config()
+checkboxes = {}
 OPTIONS = [
     'noise_reduction',
     'volume_up_dubbers',
@@ -169,19 +177,12 @@ OPTIONS = [
     'sub_region',
     'sub_item',
     'split',
-    'normalize',
     'normalize_dubbers',
     'normalize_video',
     'fix_check',
     'render_audio',
     'render_video',
 ]
-config = get_config()
-checkboxes = {}
-checkbox_style = ttk.Style()
-checkbox_style.configure('TCheckbutton', background='#ffc0cb')
-button_style = ttk.Style()
-button_style.configure('TButton', background='#ffc0cb')
 for i, option in enumerate(OPTIONS):
     var = tkinter.BooleanVar()
     if option in config['OPTIONS']:
@@ -192,10 +193,10 @@ for i, option in enumerate(OPTIONS):
         master,
         text=option,
         variable=var,
-        padding=7,
+        padding=6,
     )
     checkbox.grid(
-        row=i,
+        row=i + 1,
         column=0,
         sticky=tkinter.W
     )
@@ -231,44 +232,68 @@ template_btn.grid(
     pady=3
 )
 ToolTip(template_btn, HELP_DICT['template'], 1)
-rfxchains_btn = ttk.Button(
+nr_template_btn = ttk.Button(
     master,
-    text='RFXCHAINS',
-    name='rfx',
-    command=lambda: path_choice('fx_chains_folder')
+    text='NR TEMPLATE',
+    name='nrtemplate',
+    command=lambda: path_choice('nrtemplate')
 )
-rfxchains_btn.grid(
+nr_template_btn.grid(
     row=(len(OPTIONS) + 3),
     column=0,
     sticky=tkinter.W,
     padx=6,
     pady=3
 )
+ToolTip(nr_template_btn, HELP_DICT['nrtemplate'], 1)
+rfxchains_btn = ttk.Button(
+    master,
+    text='RFXCHAINS',
+    name='rfx',
+    command=lambda: path_choice('fx_chains_folder')
+)
+rfxchains_btn.place(relx=0.5, rely=1.0, anchor="s", x=140, y=-40)
 ToolTip(rfxchains_btn, HELP_DICT['rfx'], 1)
 fix_check_btn = ttk.Button(
     master,
-    text='FIXCHECK',
+    text='FIX CHECK',
     name='fixcheck_standalone',
     command=lambda: on_fix_check_click(master, BUTTONS)
 )
-fix_check_btn.place(relx=0.5, rely=1.0, anchor="s", x=145, y=-9)
+fix_check_btn.place(relx=0.5, rely=1.0, anchor="s", x=140, y=-9)
 ToolTip(fix_check_btn, HELP_DICT['fixcheck_standalone'], 1)
-nr_template_btn = ttk.Button(
-    master,
-    text='NR TEMP',
-    name='nrtemplate',
-    command=lambda: path_choice('nrtemplate')
-)
-nr_template_btn.place(relx=0.5, rely=1.0, anchor="s", x=145, y=-40)
-ToolTip(nr_template_btn, HELP_DICT['nrtemplate'], 1)
 help_btn = ttk.Button(
     master,
     text='HELP',
     name='help',
     command=lambda: show_help_window(master),
 )
-help_btn.place(relx=0.5, rely=1.0, anchor="s", x=145, y=-407)
+help_btn.place(relx=0.5, rely=1.0, anchor="s", x=140, y=-389)
 ToolTip(help_btn, HELP_DICT['help'], 1)
+subs_extract = ttk.Label(master, text='Select subtitles to extract:')
+subs_extract.grid(row=0, column=0, sticky=tkinter.W, padx=6, pady=6)
+SUBS_LANGS_LIST = [
+    'Russia',
+    'US',
+    'Saudi Arabia',
+    'Germany',
+    'Latin America',
+    'France',
+    'Italy',
+    'Brasil',
+]
+menu = ttk.Combobox(
+    master,
+    values=SUBS_LANGS_LIST,
+    name='subs_lang',
+    state='readonly',
+    width=13,
+)
+try:
+    menu.set(config['SUBS']['subs_lang'])
+except KeyError:
+    menu.set(SUBS_LANGS_LIST[0])
+menu.place(relx=0.5, rely=1.0, anchor="s", x=6, y=-391)
 
 
 if __name__ == '__main__':

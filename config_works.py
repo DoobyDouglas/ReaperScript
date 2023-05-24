@@ -1,5 +1,6 @@
 from typing import Dict
 import configparser
+import tkinter
 
 
 def get_config() -> configparser.ConfigParser:
@@ -10,6 +11,8 @@ def get_config() -> configparser.ConfigParser:
         config['PATHS'] = {}
     if 'OPTIONS' not in config:
         config['OPTIONS'] = {}
+    if 'SUBS' not in config:
+        config['SUBS'] = {}
     return config
 
 
@@ -31,11 +34,15 @@ def load_path(name: str) -> str or None:
     return path
 
 
-def save_options(checkboxes: Dict[str, str]) -> None:
+def save_options(
+        master: tkinter.Tk,
+        checkboxes: Dict[str, str]
+        ) -> None:
     """Функция для сохранения конфигураций"""
     config = get_config()
     for option, var in checkboxes.items():
         config['OPTIONS'][option] = str(var.get())
+    config['SUBS']['subs_lang'] = master.nametowidget('subs_lang').get()
     with open('config.ini', 'w', encoding='utf-8') as config_file:
         config.write(config_file)
 

@@ -49,13 +49,14 @@ def is_reaper_run():
 
 def show_help_window(master: tkinter.Tk):
     master.nametowidget('help').config(state='disabled')
-    master_geometry = master.geometry().split('+')[0].split('x')[0]
+    master_geometry_x = master.geometry().split('+')[0].split('x')[0]
+    master_geometry_y = master.geometry().split('+')[0].split('x')[1]
     master_position = master.geometry().split('x')[1].split('+')[1:]
-    x = int(master_position[0]) + int(master_geometry) + 6
+    x = int(master_position[0]) + int(master_geometry_x) + 6
     y = master_position[1]
     help_window = tkinter.Toplevel(master)
     help_window.title('HOW TO USE')
-    help_window.geometry(f'615x440+{x}+{y}')
+    help_window.geometry(f'615x{master_geometry_y}+{x}+{y}')
     help_window.resizable(False, False)
     help_window.protocol(
         'WM_DELETE_WINDOW',
@@ -79,6 +80,17 @@ def show_help_window(master: tkinter.Tk):
     text_field.pack(side='left', fill='both', expand=True)
     help_window.focus_force()
     help_window.mainloop()
+
+
+def set_geometry(master: tkinter.Tk):
+    width = 380
+    height = 418
+    s_width = master.winfo_screenwidth()
+    s_height = master.winfo_screenheight()
+    upper = s_height // 8
+    x = (s_width - width) // 2
+    y = (s_height - height) // 2
+    return f'{width}x{height}+{x}+{y - upper}'
 
 
 if __name__ == '__main__':

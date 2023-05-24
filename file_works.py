@@ -5,6 +5,7 @@ from config_works import (
     load_path,
     save_path,
     get_option,
+    get_config,
 )
 from help_texts import (
     MANY_VIDEO,
@@ -23,6 +24,17 @@ import glob
 import sys
 import re
 import os
+
+SUBS_LANGS_DICT = {
+    'Russia': 'rus',
+    'US': 'eng',
+    'Saudi Arabia': 'ara',
+    'Germany': 'ger',
+    'Latin America': 'spa',
+    'France': 'fre',
+    'Italy': 'ita',
+    'Brasil': 'por'
+}
 
 
 def resource_path(path):
@@ -241,6 +253,7 @@ def file_works(folder: str) -> (
               str or None]
         ):
     """Функция для подготовки файлов к работе"""
+    config = get_config()
     if not folder:
         tkinter.messagebox.showerror('Ошибка', NO_FOLDER)
         return None, None, None, None, None, None
@@ -275,7 +288,8 @@ def file_works(folder: str) -> (
         if get_option('subs_cleaner'):
             subs_edit(subs, 'srt')
     else:
-        rus_sub = '0:s:m:language:rus'
+        lang = SUBS_LANGS_DICT[config['SUBS']['subs_lang']]
+        try_sub = f'0:s:m:language:{lang}'
         eng_sub = '0:s:m:language:eng'
         any_sub = '0:s:m:language:?'
         ass_subs = glob_path(folder, '*.ass')
@@ -291,7 +305,7 @@ def file_works(folder: str) -> (
             ass_sub_convert(folder, ass_subs)
         elif not ass_subs and video:
             if os.path.splitext(video[0])[-1] == '.mkv':
-                subs_extract(folder, video, 'ass', rus_sub)
+                subs_extract(folder, video, 'ass', try_sub)
                 ass_subs = glob_path(folder, '*.ass')
                 if not ass_subs:
                     subs_extract(folder, video, 'ass', eng_sub)
