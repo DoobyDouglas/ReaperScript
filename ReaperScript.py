@@ -119,9 +119,9 @@ def reaper_main(
         project.save(False)
         if get_option('normalize_dubbers') and get_option('normalize_video'):
             normalize(project, 'all')
-        if get_option('normalize_dubbers'):
+        elif get_option('normalize_dubbers'):
             normalize(project, 'dubbers')
-        if get_option('normalize_video'):
+        elif get_option('normalize_video'):
             normalize(project, 'video')
         back_up(project, new_path)
         if get_option('fix_check'):
@@ -156,7 +156,7 @@ def on_fix_check_click(master: tkinter.Tk, BUTTONS: List):
 master = tkinter.Tk(className='REAPERSCRIPT.main')
 master.geometry(set_geometry(master))
 master.resizable(False, False)
-master.title('REAPERSCRIPT v3.27')
+master.title('REAPERSCRIPT v3.28')
 master.iconbitmap(default=resource_path('ico.ico'))
 master.protocol('WM_DELETE_WINDOW', on_closing)
 style = ttk.Style()
