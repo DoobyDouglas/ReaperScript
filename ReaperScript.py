@@ -203,6 +203,7 @@ for i, option in enumerate(OPTIONS):
         column=0,
         sticky=tkinter.W,
         pady=3,
+        padx=6,
     )
     ToolTip(checkbox, HELP_DICT[option], 1)
     checkboxes[option] = var
