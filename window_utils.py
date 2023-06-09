@@ -84,7 +84,7 @@ def show_help_window(master: tkinter.Tk):
 
 def set_geometry(master: tkinter.Tk):
     width = 380
-    height = 476
+    height = 453
     s_width = master.winfo_screenwidth()
     s_height = master.winfo_screenheight()
     upper = s_height // 8
