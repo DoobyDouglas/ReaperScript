@@ -286,9 +286,9 @@ menu = ttk.Combobox(
     state='readonly',
     width=13,
 )
-try:
+if config['SUBS']['subs_lang'] in SUBS_LANGS_LIST:
     menu.set(config['SUBS']['subs_lang'])
-except KeyError:
+else:
     menu.set(SUBS_LANGS_LIST[0])
 menu.place(relx=0.5, rely=1.0, anchor="s", x=9, y=-424)
 ToolTip(menu, HELP_DICT['subs_lang'], 1)
