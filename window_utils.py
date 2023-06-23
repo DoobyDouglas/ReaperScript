@@ -3,6 +3,20 @@ from tkinter import ttk
 from typing import List
 import tkinter
 import win32gui
+import os
+import json
+
+
+SUBS_LANGS_DICT = {
+    'Russia': 'rus',
+    'US': 'eng',
+    'Saudi Arabia': 'ara',
+    'Germany': 'ger',
+    'Latin America': 'spa',
+    'France': 'fre',
+    'Italy': 'ita',
+    'Brasil': 'por'
+}
 
 
 def wait():
@@ -91,6 +105,18 @@ def set_geometry(master: tkinter.Tk):
     x = (s_width - width) // 2
     y = (s_height - height) // 2
     return f'{width}x{height}+{x}+{y - upper}'
+
+
+def get_subs_langs():
+    if not os.path.exists('subs_langs.json'):
+        with open('subs_langs.json', 'w+') as json_file:
+            data = {}
+            for key, value in SUBS_LANGS_DICT.items():
+                data[key] = value
+            json.dump(data, json_file)
+    with open('subs_langs.json', 'r') as json_file:
+        data = json.load(json_file)
+    return data
 
 
 if __name__ == '__main__':

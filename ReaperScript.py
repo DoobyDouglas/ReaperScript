@@ -35,6 +35,7 @@ from window_utils import (
     is_reaper_run,
     show_help_window,
     set_geometry,
+    get_subs_langs,
 )
 from help_texts import HELP_DICT
 from tkinter import ttk
@@ -158,7 +159,7 @@ def on_fix_check_click(master: tkinter.Tk, BUTTONS: List):
 master = tkinter.Tk(className='REAPERSCRIPT.main')
 master.geometry(set_geometry(master))
 master.resizable(False, False)
-master.title('REAPERSCRIPT v3.32')
+master.title('REAPERSCRIPT v3.33')
 master.iconbitmap(default=resource_path('ico.ico'))
 master.protocol('WM_DELETE_WINDOW', on_closing)
 style = ttk.Style()
@@ -277,16 +278,7 @@ help_btn.place(relx=0.5, rely=1.0, anchor="s", x=140, y=-422)
 ToolTip(help_btn, HELP_DICT['help'], 1)
 subs_extract = ttk.Label(master, text='Select subtitles to extract:')
 subs_extract.grid(row=0, column=0, sticky=tkinter.W, padx=6, pady=9)
-SUBS_LANGS_LIST = [
-    'Russia',
-    'US',
-    'Saudi Arabia',
-    'Germany',
-    'Latin America',
-    'France',
-    'Italy',
-    'Brasil',
-]
+SUBS_LANGS_LIST = list(get_subs_langs().keys())
 menu = ttk.Combobox(
     master,
     values=SUBS_LANGS_LIST,
