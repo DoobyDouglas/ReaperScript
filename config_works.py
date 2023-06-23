@@ -6,7 +6,7 @@ import tkinter
 def get_config() -> configparser.ConfigParser:
     """Функция для создания/получения файла конфигураций"""
     config = configparser.ConfigParser()
-    config.read('config.ini', encoding='utf-8')
+    config.read('REAPERSCRIPT.ini', encoding='utf-8')
     if 'PATHS' not in config:
         config['PATHS'] = {}
     if 'OPTIONS' not in config:
@@ -20,7 +20,7 @@ def save_path(name: str, path: str) -> None:
     """Функция для сохранения пути в файл конфигурации"""
     config = get_config()
     config['PATHS'][name] = path
-    with open('config.ini', 'w', encoding='utf-8') as config_file:
+    with open('REAPERSCRIPT.ini', 'w', encoding='utf-8') as config_file:
         config.write(config_file)
 
 
@@ -43,7 +43,7 @@ def save_options(
     for option, var in checkboxes.items():
         config['OPTIONS'][option] = str(var.get())
     config['SUBS']['subs_lang'] = master.nametowidget('subs_lang').get()
-    with open('config.ini', 'w', encoding='utf-8') as config_file:
+    with open('REAPERSCRIPT.ini', 'w', encoding='utf-8') as config_file:
         config.write(config_file)
 
 

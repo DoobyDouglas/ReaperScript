@@ -15,6 +15,7 @@ from help_texts import (
     NO_FOLDER,
     IN_USE,
 )
+from window_utils import get_subs_langs
 import tkinter.messagebox
 import asstosrt
 import pysubs2
@@ -24,17 +25,6 @@ import glob
 import sys
 import re
 import os
-
-SUBS_LANGS_DICT = {
-    'Russia': 'rus',
-    'US': 'eng',
-    'Saudi Arabia': 'ara',
-    'Germany': 'ger',
-    'Latin America': 'spa',
-    'France': 'fre',
-    'Italy': 'ita',
-    'Brasil': 'por'
-}
 
 
 def resource_path(path):
@@ -288,7 +278,7 @@ def file_works(folder: str) -> (
         if get_option('subs_cleaner'):
             subs_edit(subs, 'srt')
     else:
-        lang = SUBS_LANGS_DICT[config['SUBS']['subs_lang']]
+        lang = get_subs_langs()[config['SUBS']['subs_lang']]
         try_sub = f'0:s:m:language:{lang}'
         eng_sub = '0:s:m:language:eng'
         any_sub = '0:s:m:language:?'

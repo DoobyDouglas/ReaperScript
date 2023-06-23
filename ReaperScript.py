@@ -35,6 +35,7 @@ from window_utils import (
     is_reaper_run,
     show_help_window,
     set_geometry,
+    get_subs_langs,
 )
 from help_texts import HELP_DICT
 from tkinter import ttk
@@ -98,8 +99,8 @@ def reaper_main(
     if audio and video and load_path('project_path'):
         master.iconify()
         new_path = project_save(folder, project_path, 'main', title, number)
-        hwnd = win32gui.FindWindow('REAPERwnd', None)
-        win32gui.ShowWindow(hwnd, 2)
+        if get_option('hide_reaper'):
+            win32gui.ShowWindow(win32gui.FindWindow('REAPERwnd', None), 2)
         if get_option('noise_reduction') and load_path('nrtemplate'):
             audio = de_noizer(folder, audio)
         project = create_project(new_path)
@@ -113,6 +114,8 @@ def reaper_main(
             if get_option('sub_region'):
                 import_subs(sbttls, project, step, 'region', strt_idx, end_idx)
             if get_option('sub_item'):
+                if get_option('add_track_for_subs'):
+                    project.add_track(1, 'SUBTITLES')
                 import_subs(sbttls, project, step, 'item', strt_idx, end_idx)
         if get_option('split'):
             split(project)
@@ -156,7 +159,7 @@ def on_fix_check_click(master: tkinter.Tk, BUTTONS: List):
 master = tkinter.Tk(className='REAPERSCRIPT.main')
 master.geometry(set_geometry(master))
 master.resizable(False, False)
-master.title('REAPERSCRIPT v3.28')
+master.title('REAPERSCRIPT v3.33')
 master.iconbitmap(default=resource_path('ico.ico'))
 master.protocol('WM_DELETE_WINDOW', on_closing)
 style = ttk.Style()
@@ -173,7 +176,6 @@ checkboxes = {}
 OPTIONS = [
     'noise_reduction',
     'volume_up_dubbers',
-    'subs_cleaner',
     'sub_region',
     'sub_item',
     'split',
@@ -182,6 +184,9 @@ OPTIONS = [
     'fix_check',
     'render_audio',
     'render_video',
+    'hide_reaper',
+    'subs_cleaner',
+    'add_track_for_subs',
 ]
 for i, option in enumerate(OPTIONS):
     var = tkinter.BooleanVar()
@@ -193,12 +198,13 @@ for i, option in enumerate(OPTIONS):
         master,
         text=option,
         variable=var,
-        padding=6,
     )
     checkbox.grid(
         row=i + 1,
         column=0,
-        sticky=tkinter.W
+        sticky=tkinter.W,
+        pady=3,
+        padx=6,
     )
     ToolTip(checkbox, HELP_DICT[option], 1)
     checkboxes[option] = var
@@ -216,7 +222,7 @@ start_bttn = ttk.Button(
     name='start',
     command=lambda: on_start_click(checkboxes, master, BUTTONS)
 )
-start_bttn.place(relx=0.5, rely=1.0, anchor="s", y=-9)
+start_bttn.place(relx=0.5, rely=1.0, anchor="s", y=-6)
 ToolTip(start_bttn, HELP_DICT['start'], 1)
 template_btn = ttk.Button(
     master,
@@ -252,7 +258,7 @@ rfxchains_btn = ttk.Button(
     name='rfx',
     command=lambda: path_choice('fx_chains_folder')
 )
-rfxchains_btn.place(relx=0.5, rely=1.0, anchor="s", x=140, y=-40)
+rfxchains_btn.place(relx=0.5, rely=1.0, anchor="s", x=140, y=-37)
 ToolTip(rfxchains_btn, HELP_DICT['rfx'], 1)
 fix_check_btn = ttk.Button(
     master,
@@ -260,7 +266,7 @@ fix_check_btn = ttk.Button(
     name='fixcheck_standalone',
     command=lambda: on_fix_check_click(master, BUTTONS)
 )
-fix_check_btn.place(relx=0.5, rely=1.0, anchor="s", x=140, y=-9)
+fix_check_btn.place(relx=0.5, rely=1.0, anchor="s", x=140, y=-6)
 ToolTip(fix_check_btn, HELP_DICT['fixcheck_standalone'], 1)
 help_btn = ttk.Button(
     master,
@@ -268,20 +274,11 @@ help_btn = ttk.Button(
     name='help',
     command=lambda: show_help_window(master),
 )
-help_btn.place(relx=0.5, rely=1.0, anchor="s", x=140, y=-389)
+help_btn.place(relx=0.5, rely=1.0, anchor="s", x=140, y=-422)
 ToolTip(help_btn, HELP_DICT['help'], 1)
 subs_extract = ttk.Label(master, text='Select subtitles to extract:')
-subs_extract.grid(row=0, column=0, sticky=tkinter.W, padx=6, pady=6)
-SUBS_LANGS_LIST = [
-    'Russia',
-    'US',
-    'Saudi Arabia',
-    'Germany',
-    'Latin America',
-    'France',
-    'Italy',
-    'Brasil',
-]
+subs_extract.grid(row=0, column=0, sticky=tkinter.W, padx=6, pady=9)
+SUBS_LANGS_LIST = list(get_subs_langs().keys())
 menu = ttk.Combobox(
     master,
     values=SUBS_LANGS_LIST,
@@ -293,7 +290,7 @@ try:
     menu.set(config['SUBS']['subs_lang'])
 except KeyError:
     menu.set(SUBS_LANGS_LIST[0])
-menu.place(relx=0.5, rely=1.0, anchor="s", x=9, y=-391)
+menu.place(relx=0.5, rely=1.0, anchor="s", x=9, y=-424)
 ToolTip(menu, HELP_DICT['subs_lang'], 1)
 
 if __name__ == '__main__':

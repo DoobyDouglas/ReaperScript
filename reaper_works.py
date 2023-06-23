@@ -10,6 +10,7 @@ import ctypes
 import shutil
 import reapy
 import time
+import re
 import os
 from threading import Thread
 
@@ -30,11 +31,13 @@ def audio_select(audio: List[str], flag: str) -> None:
     for file in audio:
         RPR.InsertMedia(file, 1)
         track = reapy.get_last_touched_track()
+        filename = os.path.splitext(file.split('\\')[-1])[0].replace(' ', '_')
         if get_option('volume_up_dubbers') and flag == 'main':
             track.items[0].set_info_value('D_VOL', 1.5)
         if fx_chains_dict:
             for name in fx_chains_dict:
-                if name in file.split('\\')[-1].lower():
+                search_name = name.replace(' ', '_')
+                if re.findall(rf'_{search_name}_', f'_{filename.lower()}_'):
                     if flag == 'main':
                         track.add_fx(fx_chains_dict[name])
                     track.set_info_string('P_NAME', name.upper())
