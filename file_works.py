@@ -216,18 +216,11 @@ def subs_edit(subs: List[str], flag: str) -> None:
         ]
     elif flag == 'ass':
         to_delete = []
-        search_char = '{'
-        if subtitles.events[0].name:
-            for i, sub in enumerate(subtitles.events):
-                if comparator(sub.name.lower()) and search_char in sub.text:
-                    to_delete.append(i)
-        if subtitles.events[0].style:
-            for i, sub in enumerate(subtitles.events):
-                if comparator(sub.style.lower()) and search_char in sub.text:
-                    if i not in to_delete:
-                        to_delete.append(i)
-        else:
-            return
+        for i, sub in enumerate(subtitles.events):
+            if comparator(sub.name.lower()):
+                to_delete.append(i)
+            elif comparator(sub.name.lower()):
+                to_delete.append(i)
     to_delete.sort()
     for i in reversed(to_delete):
         del subtitles[i]
