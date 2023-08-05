@@ -24,7 +24,7 @@ def wait():
 
 
 def on_closing():
-    raise SystemExit
+    os._exit(1)
 
 
 def on_closing_help(
@@ -58,7 +58,7 @@ def is_reaper_run():
             'REAPER выключен',
             'Сначала включите REAPER'
         )
-        raise SystemExit
+        os._exit(1)
 
 
 def show_help_window(master: tkinter.Tk):
@@ -93,7 +93,7 @@ def show_help_window(master: tkinter.Tk):
     scrollbar.pack(side='right', fill='y')
     text_field.pack(side='left', fill='both', expand=True)
     help_window.focus_force()
-    help_window.mainloop()
+    help_window.wait_window()
 
 
 def set_geometry(master: tkinter.Tk):

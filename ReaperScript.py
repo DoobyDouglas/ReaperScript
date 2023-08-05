@@ -48,8 +48,13 @@ import pysubs2
 import tkinter
 import ffmpeg
 import reapy
-import time
 import os
+
+
+NAME = 'REAPERSCRIPT'
+VERSION = 3.38
+
+IMPORT_SUSB_ITEMS_THREADS = 8
 
 
 def make_episode(
@@ -109,11 +114,13 @@ def reaper_main(
         project.save(False)
         if subs:
             sbttls = pysubs2.load(subs[0])
-            step = len(sbttls) // 8
-            strt_idx, end_idx = 0, step
             if get_option('sub_region'):
+                step = len(sbttls)
+                strt_idx, end_idx = 0, step
                 import_subs(sbttls, project, step, 'region', strt_idx, end_idx)
             if get_option('sub_item'):
+                step = len(sbttls) // IMPORT_SUSB_ITEMS_THREADS
+                strt_idx, end_idx = 0, step
                 if get_option('add_track_for_subs'):
                     project.add_track(1, 'SUBTITLES')
                 import_subs(sbttls, project, step, 'item', strt_idx, end_idx)
@@ -136,6 +143,8 @@ def reaper_main(
                 make_episode(video, folder, title, number, ext, output_file)
     buttons_active(master, BUTTONS)
     master.wm_deiconify()
+    master.wm_attributes('-topmost', 1)
+    master.wm_attributes('-topmost', 0)
     master.focus_force()
 
 
@@ -156,10 +165,10 @@ def on_fix_check_click(master: tkinter.Tk, BUTTONS: List):
     thread.start()
 
 
-master = tkinter.Tk(className='REAPERSCRIPT.main')
+master = tkinter.Tk(className=f'{NAME}.main')
 master.geometry(set_geometry(master))
 master.resizable(False, False)
-master.title('REAPERSCRIPT v3.34')
+master.title(f'{NAME} v{VERSION:.2f}')
 master.iconbitmap(default=resource_path('ico.ico'))
 master.protocol('WM_DELETE_WINDOW', on_closing)
 style = ttk.Style()

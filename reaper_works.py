@@ -118,11 +118,10 @@ def subs_generator(
             start = sbttls[i].start / 1000
             end = sbttls[i].end / 1000
             if flag == 'region':
-                project.add_region(
+                region = project.add_region(
                     start, end, sbttls[i].text, (147, 112, 219)
                 )
-                # RPR.NF_SetSWSMarkerRegionSub(sbttls[i].text, region.index)
-                # Странно себя ведёт в потоке
+                RPR.NF_SetSWSMarkerRegionSub(sbttls[i].text, region.index - 1)
             elif flag == 'item':
                 item = project.tracks[1].add_item(start, end)
                 RPR.ULT_SetMediaItemNote(item.id, sbttls[i].text)

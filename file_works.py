@@ -111,8 +111,7 @@ def subs_extract(
         ) -> None:
     """Функция для извлечения субтитров из видео"""
     try:
-        video_path = video[0].replace('\\', '/')
-        input_file = ffmpeg.input(video_path)
+        input_file = ffmpeg.input(os.path.normpath(video[0]))
         output_file = f'{folder}/subs.{param}'
         output = ffmpeg.output(input_file, output_file, map=mapping)
         ffmpeg.run(output)

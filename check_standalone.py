@@ -126,6 +126,8 @@ def fix_checker(master: tkinter.Tk, BUTTONS: List):
             project.add_marker(dbbl_sbs[s][0], 'DUBBLE HERE', (255, 255, 0))
     buttons_active(master, BUTTONS)
     master.focus_force()
+    master.wm_attributes('-topmost', 1)
+    master.wm_attributes('-topmost', 0)
 
 
 if __name__ == '__main__':
