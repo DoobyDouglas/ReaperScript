@@ -1,6 +1,8 @@
 from help_texts import HOW_TO_USE
+from const import NAME
 from tkinter import ttk
 from typing import List
+import tkinter.messagebox
 import tkinter
 import win32gui
 import os
@@ -20,7 +22,14 @@ SUBS_LANGS_DICT = {
 
 
 def wait():
-    pass
+    ok = tkinter.messagebox.askokcancel(
+        'Внимание',
+        f'{NAME} прекратит сборку текущей серии'
+    )
+    if ok:
+        on_closing()
+    else:
+        pass
 
 
 def on_closing():

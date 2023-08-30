@@ -37,10 +37,10 @@ from window_utils import (
     set_geometry,
     get_subs_langs,
 )
+from const import NAME, VERSION, IMPORT_SUSB_ITEMS_THREADS
 from help_texts import HELP_DICT
 from tkinter import ttk
 from tktooltip import ToolTip
-import tkinter.messagebox
 import asstosrt
 import win32gui
 import win32con
@@ -49,12 +49,6 @@ import tkinter
 import ffmpeg
 import reapy
 import os
-
-
-NAME = 'REAPERSCRIPT'
-VERSION = 3.38
-
-IMPORT_SUSB_ITEMS_THREADS = 8
 
 
 def make_episode(
