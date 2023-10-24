@@ -342,18 +342,19 @@ def render(folder: str, flag: str, tracks: int = None) -> str or None:
         directory_hwnd, win32con.WM_SETTEXT, None, directory_buffer
     )
     render = win32gui.GetDlgItem(hwnd, 1)
-    clsname, title = '#32770', 'Rendering to file...'
-    if flag == 'main':
-        hide = Thread(
-            target=hide_window,
-            args=(clsname, title, 'render_to_file')
-        )
-    elif flag == 'de_noize':
-        hide = Thread(
-            target=hide_window,
-            args=(clsname, title, 'de_noize', tracks)
-        )
-    hide.start()
+    if get_option('hide_render'):
+        clsname, title = '#32770', 'Rendering to file...'
+        if flag == 'main':
+            hide = Thread(
+                target=hide_window,
+                args=(clsname, title, 'render_to_file')
+            )
+        elif flag == 'de_noize':
+            hide = Thread(
+                target=hide_window,
+                args=(clsname, title, 'de_noize', tracks)
+            )
+        hide.start()
     win32gui.SendMessage(render, win32con.BM_CLICK, 0, 0)
     if flag == 'main':
         output_file = os.path.normpath(glob_path(folder, 'audio.*')[0])

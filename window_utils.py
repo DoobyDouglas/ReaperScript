@@ -24,7 +24,7 @@ SUBS_LANGS_DICT = {
 def wait():
     ok = tkinter.messagebox.askokcancel(
         'Внимание',
-        f'{NAME} прекратит сборку текущей серии'
+        f'{NAME} прекратит работу над текущей серией'
     )
     if ok:
         on_closing()
@@ -107,7 +107,7 @@ def show_help_window(master: tkinter.Tk):
 
 def set_geometry(master: tkinter.Tk):
     width = 380
-    height = 453
+    height = 480
     s_width = master.winfo_screenwidth()
     s_height = master.winfo_screenheight()
     upper = s_height // 8

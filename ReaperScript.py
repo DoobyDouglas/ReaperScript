@@ -188,6 +188,7 @@ OPTIONS = [
     'render_audio',
     'render_video',
     'hide_reaper',
+    'hide_render',
     'subs_cleaner',
     'add_track_for_subs',
 ]
@@ -277,7 +278,7 @@ help_btn = ttk.Button(
     name='help',
     command=lambda: show_help_window(master),
 )
-help_btn.place(relx=0.5, rely=1.0, anchor="s", x=140, y=-422)
+help_btn.place(relx=0.5, rely=1.0, anchor="s", x=140, y=-449)
 ToolTip(help_btn, HELP_DICT['help'], 1)
 subs_extract = ttk.Label(master, text='Select subtitles to extract:')
 subs_extract.grid(row=0, column=0, sticky=tkinter.W, padx=6, pady=9)
@@ -296,7 +297,7 @@ try:
         menu.set(SUBS_LANGS_LIST[0])
 except KeyError:
     menu.set(SUBS_LANGS_LIST[0])
-menu.place(relx=0.5, rely=1.0, anchor="s", x=9, y=-424)
+menu.place(relx=0.5, rely=1.0, anchor="s", x=9, y=-451)
 ToolTip(menu, HELP_DICT['subs_lang'], 1)
 
 if __name__ == '__main__':

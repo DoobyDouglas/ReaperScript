@@ -110,6 +110,7 @@ NR_TEMP = 'Выбрать шаблон проекта REAPER для удален
 SUBS_LANG = 'Язык субтитров'
 ADD_TRACK_FOR_SUBS = 'Добавляет отдельный трек для субтитров'
 HIDE_REAPER = 'Сворачивает основное окно REAPER после начала работы'
+HIDE_RENDER = 'Сворачивает окна рендера'
 HELP = 'Помощь'
 HELP_DICT = {
     'split': SPLIT,
@@ -132,6 +133,7 @@ HELP_DICT = {
     'subs_lang': SUBS_LANG,
     'add_track_for_subs': ADD_TRACK_FOR_SUBS,
     'hide_reaper': HIDE_REAPER,
+    'hide_render': HIDE_RENDER,
 }
 MANY_VIDEO = 'Оставьте в рабочей папке только нужный видеофайл'
 MANY_SUBS = 'Оставьте в рабочей папке только нужный файл субтитров'
